@@ -1,0 +1,7 @@
+pip install -r requirements.txt
+uvicorn server:app --reload
+
+server: http://127.0.0.1:8000/
+docs: http://127.0.0.1:8000/docs
+
+then how to use
