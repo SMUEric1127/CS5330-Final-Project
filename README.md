@@ -24,6 +24,8 @@ Then click "Try it out" then it will allow us to send a JSON object:
 
 Then we can execute and receive the output right after the input box, with the status code and everything
 
+<img width="640" alt="image" src="https://github.com/SMUEric1127/CS5330-Python-Backend/assets/85500156/c9ffc24c-2bb4-411d-bc06-9ea2e7545b6f">
+
 # Contributions:
 
 Eric Vu
