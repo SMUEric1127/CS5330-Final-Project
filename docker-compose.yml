@@ -4,12 +4,10 @@ services:
   mysql:
     image: mysql:latest
     environment:
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: cs5330
+      MYSQL_PASSWORD: Sql5330!
+      MYSQL_DATABASE: dbproj
     ports:
       - "3306:3306"
     volumes:
       - ./data:/var/lib/mysql
-    env-file:
-      - .back-env

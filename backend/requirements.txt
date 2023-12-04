@@ -2,3 +2,4 @@ fastapi[all]
 python-dotenv
 tabulate
 pandas
+mysql-connector-python
