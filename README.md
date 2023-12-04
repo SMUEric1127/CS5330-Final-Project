@@ -16,4 +16,8 @@ At the current directory (where docker-compose.yml) is in, start the docker by
 
 This will start the mysql and the phpmyadmin so we can view the data (similar to MySQL workbench, but on the browser).
 
-## 2.
+## 2. View your data (phpmyadmin):
+
+Go to [http://localhost:8080](http://localhost:8080)
+
+If you see cannot connect screen like below, this mean that the phpmyadmin boot up too fast (before the mysql complete booting itself), so we just need to hit retry and it will be connected.
