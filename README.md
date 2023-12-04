@@ -36,8 +36,8 @@ Here you will see our database table, currently named: `dbproj`, click on that a
 
 > docker compose down
 
-
 # Contributions:
+
 Eric Vu
 
-<add your name here>
+<Fill in your name here if you want to be on here!>
