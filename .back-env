@@ -1,0 +1,4 @@
+MYSQL_USER=cs5330
+MYSQL_PASSWORD=Sql5330!
+DB_NAME=dbproj
+HOST=localhost
