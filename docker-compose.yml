@@ -3,6 +3,7 @@ version: "3.8"
 services:
   mysql:
     image: mysql:latest
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: bestteamever
       MYSQL_USER: cs5330
@@ -12,3 +13,24 @@ services:
       - "3306:3306"
     volumes:
       - ./database/data:/var/lib/mysql
+    networks:
+      - cs5330_network
+
+  phpmyadmin:
+    depends_on:
+      - mysql
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: cs5330
+      PMA_PASSWORD: Sql5330!
+    networks:
+      - cs5330_network
+
+networks:
+  cs5330_network:
+    driver: bridge
