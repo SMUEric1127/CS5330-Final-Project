@@ -1,6 +1,4 @@
-# Installation: 
-
-First full this github using `git pull git@github.com:SMUEric1127/CS5330-Python-Backend.git`
+# Installation:
 
 Install the requirements using `pip install -r requirements.txt` (If this doesn't work, try pip3)
 
