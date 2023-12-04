@@ -4,6 +4,7 @@ services:
   mysql:
     image: mysql:latest
     environment:
+      MYSQL_ROOT_PASSWORD: bestteamever
       MYSQL_USER: cs5330
       MYSQL_PASSWORD: Sql5330!
       MYSQL_DATABASE: dbproj
