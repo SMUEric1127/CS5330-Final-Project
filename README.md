@@ -6,6 +6,10 @@ Install the requirements using `pip install -r requirements.txt` (If this doesn'
 
 # How to use:
 
+To run it, enter in your terminal:
+
+`uvicorn main:server --reload`
+
 There are three examples in the server.py that cover: simple GET, GET with Params, and POST with more complicated data (JSON,... etc.)
 
 To test without a frontend, go to: `http://127.0.0.1:8000/docs` it should allow you to test different backend function, here are one example for the POST with a custom User Schema:
