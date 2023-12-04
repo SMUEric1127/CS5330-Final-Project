@@ -1,0 +1,3 @@
+[submodule "backend/DatabaseProject"]
+	path = backend/DatabaseProject
+	url = git@github.com:Matthews316/DatabaseProject.git
