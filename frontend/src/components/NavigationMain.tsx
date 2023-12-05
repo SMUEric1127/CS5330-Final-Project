@@ -13,6 +13,7 @@ import React from "react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { ModeToggle } from "./theme/ModeToggle";
 
 function NavigationMain() {
   return (
@@ -28,14 +29,18 @@ function NavigationMain() {
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Button
-              variant={"outline"}
-              className="bg-primary font-medium text-xl border-0"
-            >
-              <Link href="/dashboard" legacyBehavior passHref>
-                Dashboard
-              </Link>
-            </Button>
+            <div className="flex flex-row space-x-7">
+              <Button
+                variant={"outline"}
+                className="bg-primary font-medium text-xl border text-slate-100 hover:bg-transparent hover:border-primary hover:border"
+              >
+                <Link href="/dashboard" legacyBehavior passHref>
+                  Dashboard
+                </Link>
+              </Button>
+
+              <ModeToggle />
+            </div>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>

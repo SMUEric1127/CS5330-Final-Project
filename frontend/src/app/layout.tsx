@@ -25,7 +25,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="text-primary-foreground">
+          <div className="bg-background text-foreground">
             {children}
             <Toaster />
           </div>
