@@ -29,7 +29,8 @@
     ".next/types/**/*.ts",
     "src/components/sidebar.js",
     "src/components/animations/ClientAnimatePresence.js",
-    "src/app/layout.js"
+    "src/app/layout.js",
+    "src/components/images/Icon.js"
   ],
   "exclude": ["node_modules"]
 }

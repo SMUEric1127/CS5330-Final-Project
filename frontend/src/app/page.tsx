@@ -6,9 +6,9 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="h-screen w-screen">
+    <div className="min-h-screen w-screen pb-20">
       <NavigationMain />
-      <div className="container pt-40 mx-auto">
+      <div className="container pt-10 mx-auto">
         <div className="flex flex-col lg:flex-row text-6xl font-bold">
           <div className="flex-1">
             Enhance Academic Excellence with EduTrack

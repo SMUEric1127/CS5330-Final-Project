@@ -17,7 +17,7 @@ import { ModeToggle } from "./theme/ModeToggle";
 
 function NavigationMain() {
   return (
-    <div className="flex-col font-medium text-2xl">
+    <div className="flex-col font-medium text-xl">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
@@ -34,7 +34,7 @@ function NavigationMain() {
             <div className="flex flex-row space-x-7">
               <Button
                 variant={"outline"}
-                className="bg-primary font-medium text-xl border text-slate-100 hover:bg-transparent hover:border-primary hover:border"
+                className="bg-primary font-medium text-lg border text-slate-100 hover:bg-transparent hover:border-primary hover:border"
               >
                 <Link href="/dashboard" legacyBehavior passHref>
                   Dashboard
