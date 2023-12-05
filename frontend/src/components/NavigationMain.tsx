@@ -8,7 +8,7 @@ import {
   NavigationMenuTrigger,
   NavigationMenuViewport,
 } from "@/components/ui/navigation-menu";
-
+import { CircularIcon } from "@/components/images/CircularIcon";
 import React from "react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
@@ -20,7 +20,9 @@ function NavigationMain() {
     <div className="flex-col font-medium text-2xl">
       <NavigationMenu>
         <NavigationMenuList>
-          <NavigationMenuItem>Logo</NavigationMenuItem>
+          <NavigationMenuItem>
+            <CircularIcon imageUrl={"/icon.png"} />
+          </NavigationMenuItem>
         </NavigationMenuList>
         <NavigationMenuList>
           <NavigationMenuItem>

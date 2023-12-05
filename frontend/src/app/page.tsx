@@ -10,26 +10,27 @@ export default function Home() {
       <NavigationMain />
       <div className="container pt-40 mx-auto">
         <div className="flex flex-col lg:flex-row text-6xl font-bold">
-          <div className="flex-1 pt-20">
-            Make your life easier with our application
-            <div className="text-xl font-light pt-10">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              Pellentesque rutrum, nunc non tristique condimentum, tellus ligula
-              feugiat nisl, a dictum metus purus eu augue. Donec elit urna,
-              dictum nec mi ut, commodo scelerisque felis. Phasellus sed
-              facilisis lectus. Sed id massa dolor. Integer eu ipsum tristique,
-              auctor libero non, lobortis nisi. Nunc non ligula ligula. Aliquam
-              vel magna pharetra, congue arcu et, scelerisque est. Nulla magna
-              libero, gravida ac condimentum in, laoreet vitae tellus. Fusce
-              interdum imperdiet accumsan. Duis accumsan consequat nibh, et
-              suscipit eros mollis eget. Aenean ac est velit. Maecenas risus
-              diam, pulvinar a arcu sit amet, elementum vehicula ante. Aenean
-              mauris est, congue eu imperdiet vel, volutpat ut ligula.
-              Suspendisse sodales non felis in consequat.
+          <div className="flex-1">
+            Enhance Academic Excellence with EduTrack
+            <div className="text-lg font-light pt-10 text-justify">
+              EduTrack simplifies the complex process of academic review,
+              offering real-time insights into program performance and faculty
+              effectiveness. Embrace a streamlined approach to manage courses,
+              departments, and learning objectives with ease. Our intuitive
+              platform facilitates comprehensive analytics, enabling
+              universities to make data-driven decisions for continuous
+              improvement. EduTrack is designed to foster collaboration among
+              faculty and administrative staff, ensuring a cohesive and
+              well-coordinated educational strategy. Experience a seamless
+              integration with your existing university systems, enhanced by
+              robust security and customizable reporting tools. Elevate your
+              institution's educational standards and achieve accreditation
+              goals effortlessly with EduTrack - where innovation meets academic
+              excellence.
             </div>
             <Button
               variant={"outline"}
-              className="text-2xl font-medium py-7 mt-10"
+              className="text-2xl font-medium py-7 mt-10 border-black hover:bg-black hover:text-white"
             >
               <Link href="/dashboard">GET STARTED</Link>
             </Button>
