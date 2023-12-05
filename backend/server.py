@@ -452,3 +452,122 @@ async def update_record(
 
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
+
+def list_programs_by_department(connection, department_id):
+    query = "SELECT ProgName FROM Program WHERE DeptID = %s;"
+    params = (department_id,)
+    return execute_query(connection, query, params)
+
+def list_faculty_by_department(connection, department_id):
+    query = """
+    SELECT
+        f.Name AS FacultyName,
+        f.Email AS FacultyEmail,
+        f.Position AS FacultyRank,
+        d.DeptName AS DepartmentName,
+        (SELECT p.ProgName
+         FROM Program p
+         WHERE p.FacultyLeadID = f.FacultyID
+         ) AS ProgramInCharge
+    FROM Faculty f, Department d
+    WHERE f.DeptID = d.DeptID AND d.DeptID = %s;
+    """
+    params = (department_id,)
+    return execute_query(connection, query, params)
+
+def list_courses_by_program(connection, program_name):
+    query = """
+    SELECT
+        C.Title AS CourseTitle,
+        S.Year,
+        O.Description AS ObjectiveDescription,
+        SO.Description AS SubObjectivesDescription
+    FROM Course C
+    JOIN Section S ON C.CourseID = S.CourseID
+    JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
+    JOIN Objectives O ON CO.ObjCode = O.ObjCode
+    LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
+    WHERE C.DeptID = (SELECT DeptID FROM Program WHERE ProgName = %s)
+    ORDER BY C.Title, S.Year;
+    """
+    params = (program_name,)
+    return execute_query(connection, query, params)
+
+def list_objectives_by_program(connection, program_name):
+    query = """
+    SELECT O.Description
+    FROM Objectives O
+    JOIN Program P ON P.ProgName = O.ProgName
+    WHERE O.ProgName = %s;
+    """
+    params = (program_name,)
+    return execute_query(connection, query, params)
+
+def list_evaluations_by_program_and_semester(connection, program_name, semester, year):
+    query = """
+    SELECT
+        P.ProgName,
+        C.DeptID,
+        C.CourseID,
+        C.Title AS CourseTitle,
+        S.SecID,
+        S.FacultyLeadID,
+        E.Semester,
+        E.Year,
+        E.EvalMethod,
+        E.StudentsPassed
+    FROM ObjectiveEval E
+    JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
+    JOIN Course C ON S.CourseID = C.CourseID
+    JOIN Program P ON C.DeptID = P.DeptID
+    WHERE P.ProgName = %s AND E.Semester = %s AND E.Year = %s;
+    """
+    params = (program_name, semester, year)
+    return execute_query(connection, query, params)
+
+def list_evaluation_results_by_academic_year(connection, start_year):
+    end_year = start_year + 1
+    query = """
+    SELECT
+        O.ObjCode AS ObjectiveCode,
+        SO.SubObjCode AS SubObjectiveCode,
+        E.Semester,
+        E.Year,
+        E.EvalMethod,
+        E.StudentsPassed
+    FROM ObjectiveEval E
+    JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
+    JOIN Objectives O ON CO.ObjCode = O.ObjCode
+    LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
+    JOIN Section S ON E.SecID = S.SecID
+    JOIN Course C on C.CourseID = S.CourseID
+    WHERE
+        (S.Semester = 'Summer' AND S.Year = %s) OR
+        (S.Semester IN ('Fall', 'Spring') AND S.Year = %s)
+    ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+    """
+    params = (start_year, end_year)
+    return execute_query(connection, query, params)
+
+def aggregate_evaluations_by_academic_year(connection, start_year):
+    end_year = start_year + 1
+    query = """
+    SELECT
+        o.ObjCode AS ObjectiveCode,
+        so.SubObjCode AS SubObjectiveCode,
+        COALESCE(SUM(oe.StudentsPassed), 0) AS StudentsPassed,
+        COALESCE(SUM(s.EnrollCount), 0) AS TotalStudents,
+        COALESCE(ROUND((SUM(oe.StudentsPassed) / NULLIF(SUM(s.EnrollCount), 0)) * 100, 2), 0) AS PercentagePassed
+    FROM Objectives o
+    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
+    LEFT JOIN CourseObjectives co ON o.ObjCode = co.ObjCode OR so.SubObjCode = co.SubObjCode
+    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
+    LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
+    WHERE
+        (s.Semester = 'Summer' AND s.Year = %s) OR
+        (s.Semester IN ('Fall', 'Spring') AND s.Year = %s)
+    GROUP BY o.ObjCode, so.SubObjCode
+    ORDER BY o.ObjCode, so.SubObjCode;
+    """
+    params = (start_year, end_year)
+    return execute_query(connection, query, params)
