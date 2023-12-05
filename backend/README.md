@@ -6,7 +6,7 @@ Install the requirements using `pip install -r requirements.txt` (If this doesn'
 
 To run it, enter in your terminal:
 
-`uvicorn main:server --reload`
+`uvicorn server:app --reload`
 
 There are three examples in the server.py that cover: simple GET, GET with Params, and POST with more complicated data (JSON,... etc.)
 
@@ -27,4 +27,3 @@ Then click "Try it out" then it will allow us to send a JSON object:
 Then we can execute and receive the output right after the input box, with the status code and everything
 
 <img width="640" alt="image" src="https://github.com/SMUEric1127/CS5330-Python-Backend/assets/85500156/c9ffc24c-2bb4-411d-bc06-9ea2e7545b6f">
-

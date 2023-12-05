@@ -1,6 +1,6 @@
 # Installation:
 
-First full this github using `git pull git@github.com:SMUEric1127/CS5330-Python-Backend.git`
+First full this github using `git clone git@github.com:SMUEric1127/CS5330-Python-Backend.git`
 
 Install Docker (if you haven't): [Docker Installation](https://docs.docker.com/engine/install/)
 
