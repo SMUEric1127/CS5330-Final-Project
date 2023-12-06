@@ -253,6 +253,11 @@ export const AddData = () => {
             console.log(
               `Creating sub-objective with: ${subObjectiveData.description}, ${subObjectiveData.objCode}`
             );
+            const url = `/api/add_sub_objective/?description=${encodeURIComponent(
+              subObjectiveData.description
+            )}&obj_code=${encodeURIComponent(subObjectiveData.objCode)}`;
+            const successMessage = "Sub-Objective added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Sub-Objective"
           description={

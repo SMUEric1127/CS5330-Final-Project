@@ -122,7 +122,8 @@ export const ByProgram = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
-              <TableHead>Objective</TableHead>
+              <TableHead>Objective Code</TableHead>
+              <TableHead>Objective Description</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -130,6 +131,7 @@ export const ByProgram = () => {
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{data[0]}</TableCell>
+                <TableCell>{data[1]}</TableCell>
               </TableRow>
             ))}
           </TableBody>
