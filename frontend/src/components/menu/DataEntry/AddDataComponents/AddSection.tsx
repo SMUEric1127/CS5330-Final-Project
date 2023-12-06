@@ -1,6 +1,15 @@
 import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { clearData } from "./dataHelper/helper";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddSectionProps {
   sectionData: any;
@@ -23,6 +32,14 @@ const AddSection: React.FC<AddSectionProps> = ({
     }));
   };
 
+  const handleSelectChange = (e: any) => {
+    const name = "semester";
+    setSectionData((prevData: any) => ({
+      ...prevData,
+      [name]: e,
+    }));
+  };
+
   return (
     <div className="flex flex-col space-y-5">
       <div className="flex flex-row space-x-5">
@@ -42,16 +59,22 @@ const AddSection: React.FC<AddSectionProps> = ({
         />
       </div>
       <div className="flex flex-row space-x-5">
-        <Input
-          name="semester"
-          type="text"
-          placeholder="Semester"
-          onChange={handleChange}
-          value={sectionData.semester || ""}
-        />
+        <Select name="position" onValueChange={handleSelectChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Semester</SelectLabel>
+              <SelectItem value="Fall">Fall Semester</SelectItem>
+              <SelectItem value="Spring">Spring Semester</SelectItem>
+              <SelectItem value="Summer">Summer Semester</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input
           name="year"
-          type="text"
+          type="number"
           placeholder="Year"
           onChange={handleChange}
           value={sectionData.year || ""}
@@ -67,7 +90,7 @@ const AddSection: React.FC<AddSectionProps> = ({
         />
         <Input
           name="enrollCount"
-          type="text"
+          type="number"
           placeholder="Enrollment Count"
           onChange={handleChange}
           value={sectionData.enrollCount || ""}

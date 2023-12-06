@@ -200,10 +200,24 @@ export const AddData = () => {
           }
         />
         <PopupComponent
-          onConfirm={() => {
+          onConfirm={async () => {
             console.log(
               `Creating section with: ${sectionData.secID}, ${sectionData.courseID}, ${sectionData.semester}, ${sectionData.year}, ${sectionData.facultyLeadID}, ${sectionData.enrollCount}`
             );
+            // 'http://localhost:8000/add_section/?sec_id=123&course_id=CS1341&semester=Fall&year=2023&faculty_lead_id=11111111&enroll_count=200' \
+            const url = `/api/add_section/?sec_id=${encodeURIComponent(
+              sectionData.secID
+            )}&course_id=${encodeURIComponent(
+              sectionData.courseID
+            )}&semester=${encodeURIComponent(
+              sectionData.semester
+            )}&year=${encodeURIComponent(
+              sectionData.year
+            )}&faculty_lead_id=${encodeURIComponent(
+              sectionData.facultyLeadID
+            )}&enroll_count=${encodeURIComponent(sectionData.enrollCount)}`;
+            const successMessage = "Section added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Section"
           description={
@@ -218,6 +232,13 @@ export const AddData = () => {
             console.log(
               `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog}, ${objectiveData.dept_id}`
             );
+            const url = `/api/add_objective/?description=${encodeURIComponent(
+              objectiveData.description
+            )}&prog=${encodeURIComponent(
+              objectiveData.prog
+            )}&dept_id=${encodeURIComponent(objectiveData.dept_id)}`;
+            const successMessage = "Objective added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Objective"
           description={
