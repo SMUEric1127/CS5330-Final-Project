@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from DatabaseProject import help_functions
-from DatabaseProject import sql_cmds
+import help_functions
+import sql_cmds
 import re
 import pandas as pd
 
@@ -10,6 +10,25 @@ import pandas as pd
 from database_source.query import exampleQuery, exampleQueryParam
 
 app = FastAPI()
+
+connection = help_functions.connect_database(host_name='localhost',
+            user_name='cs5330',
+            user_password='Sql5330!',
+            db_name='dbproj')
+
+class DepartmentQuery(BaseModel):
+    department_id: str
+
+class ProgramQuery(BaseModel):
+    program_name: str
+
+class ProgramAndSemesterQuery(BaseModel):
+    program_name: str
+    semester: str
+    year: int
+
+class AcademicYearQuery(BaseModel):
+    start_year: int
 
 
 @app.get("/")
@@ -42,37 +61,40 @@ async def create_user(user: UserCreate):
     return {"message": "User created successfully using POST API", "user_data": user_data}
 
 #Create Tables Function 
-@app.post("/create_tables/", status_code=201)
+@app.post("/create_tables/")
 async def create_tables():
-     existing_tables = help_functions.check_table(connection)
-     required_tables = {
-        'department': sql_cmds.create_department_table,
-        'faculty': sql_cmds.create_faculty_table,
-        'program': sql_cmds.create_program_table,
-        'course': sql_cmds.create_course_table,
-        'section': sql_cmds.create_section_table,
-        'objectives': sql_cmds.create_objectives_table,
-        'subobjectives': sql_cmds.create_sub_objectives_table,
-        'courseobjectives': sql_cmds.create_course_objectives_table,
-        'objectiveeval': sql_cmds.create_objective_eval_table,
-    }
-     tables_to_create = [table for table in required_tables if table not in existing_tables]
+    try:
+        existing_tables = help_functions.valid_tables(connection)
+        required_tables = {
+            'department': sql_cmds.create_department_table,
+            'faculty': sql_cmds.create_faculty_table,
+            'program': sql_cmds.create_program_table,
+            'course': sql_cmds.create_course_table,
+            'section': sql_cmds.create_section_table,
+            'objectives': sql_cmds.create_objectives_table,
+            'subobjectives': sql_cmds.create_sub_objectives_table,
+            'courseobjectives': sql_cmds.create_course_objectives_table,
+            'objectiveeval': sql_cmds.create_objective_eval_table,
+        }
+        tables_to_create = [table for table in required_tables if table not in existing_tables]
 
-     if tables_to_create:
-        for table in tables_to_create:
-            if help_functions.execute_query(connection, required_tables[table]):
-                message = f"Table '{table}' created successfully"
-                print(message)
-            else:
-                message = f"Table '{table}' created successfully"
-                print (message)
-        return{"message": "Tables created successfully"}
-     else:
-        return {"message": "All required tables already exist."}
+        if tables_to_create:
+            for table in tables_to_create:
+                if help_functions.execute_query(connection, required_tables[table]):
+                    response_message = f"Table '{table}' created successfully"
+                else:
+                    response_message = f"Error occurred while creating table '{table}'"
+        else:
+            response_message = "All required tables already exist."
+
+        return {"message": response_message}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
 
 
 #Clear a Certain Table 
-@app.post("/Clear a certain Table/{table_name}") 
+@app.post("/Remove_Table/") 
 async def delete_table(table_name: str):
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
@@ -97,7 +119,7 @@ async def delete_table(table_name: str):
         help_functions.execute_query(connection, f_key_on)
 
 #Clear All Tables
-@app.post("/clear_all_tables/")
+@app.post("/Delete Data from Tables/")
 async def clear_all_tables():
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
@@ -453,121 +475,248 @@ async def update_record(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-def list_programs_by_department(connection, department_id):
-    query = "SELECT ProgName FROM Program WHERE DeptID = %s;"
-    params = (department_id,)
-    return execute_query(connection, query, params)
+@app.get("/list_programs_by_department/{department_id}")
+async def list_programs_by_department(department_id: str):
+    try:
+        query = "SELECT ProgName FROM Program WHERE DeptID = %s;"
+        params = (department_id,)
+        result = help_functions.execute_query(connection, query, params)
 
-def list_faculty_by_department(connection, department_id):
-    query = """
-    SELECT
-        f.Name AS FacultyName,
-        f.Email AS FacultyEmail,
-        f.Position AS FacultyRank,
-        d.DeptName AS DepartmentName,
-        (SELECT p.ProgName
-         FROM Program p
-         WHERE p.FacultyLeadID = f.FacultyID
-         ) AS ProgramInCharge
-    FROM Faculty f, Department d
-    WHERE f.DeptID = d.DeptID AND d.DeptID = %s;
-    """
-    params = (department_id,)
-    return execute_query(connection, query, params)
+        if result:
+            programs = [record['ProgName'] for record in result]
+            return {"programs": programs}
+        else:
+            return {"message": f"No programs found for department {department_id}"}
 
-def list_courses_by_program(connection, program_name):
-    query = """
-    SELECT
-        C.Title AS CourseTitle,
-        S.Year,
-        O.Description AS ObjectiveDescription,
-        SO.Description AS SubObjectivesDescription
-    FROM Course C
-    JOIN Section S ON C.CourseID = S.CourseID
-    JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
-    JOIN Objectives O ON CO.ObjCode = O.ObjCode
-    LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
-    WHERE C.DeptID = (SELECT DeptID FROM Program WHERE ProgName = %s)
-    ORDER BY C.Title, S.Year;
-    """
-    params = (program_name,)
-    return execute_query(connection, query, params)
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
 
-def list_objectives_by_program(connection, program_name):
-    query = """
-    SELECT O.Description
-    FROM Objectives O
-    JOIN Program P ON P.ProgName = O.ProgName
-    WHERE O.ProgName = %s;
-    """
-    params = (program_name,)
-    return execute_query(connection, query, params)
+@app.get("/list_faculty_by_department/{department_id}")
+async def list_faculty_by_department(department_id: str):
+    try:
+        query = """
+        SELECT
+            f.Name AS FacultyName,
+            f.Email AS FacultyEmail,
+            f.Position AS FacultyRank,
+            d.DeptName AS DepartmentName,
+            (SELECT p.ProgName
+             FROM Program p
+             WHERE p.FacultyLeadID = f.FacultyID
+             ) AS ProgramInCharge
+        FROM Faculty f, Department d
+        WHERE f.DeptID = d.DeptID AND d.DeptID = %s;
+        """
+        params = (department_id,)
+        result = help_functions.execute_query(connection, query, params)
 
-def list_evaluations_by_program_and_semester(connection, program_name, semester, year):
-    query = """
-    SELECT
-        P.ProgName,
-        C.DeptID,
-        C.CourseID,
-        C.Title AS CourseTitle,
-        S.SecID,
-        S.FacultyLeadID,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
-    JOIN Course C ON S.CourseID = C.CourseID
-    JOIN Program P ON C.DeptID = P.DeptID
-    WHERE P.ProgName = %s AND E.Semester = %s AND E.Year = %s;
-    """
-    params = (program_name, semester, year)
-    return execute_query(connection, query, params)
+        if result:
+            faculty_list = [
+                {
+                    "FacultyName": record['FacultyName'],
+                    "FacultyEmail": record['FacultyEmail'],
+                    "FacultyRank": record['FacultyRank'],
+                    "DepartmentName": record['DepartmentName'],
+                    "ProgramInCharge": record['ProgramInCharge'],
+                }
+                for record in result
+            ]
+            return {"faculty": faculty_list}
+        else:
+            return {"message": f"No faculty found for department {department_id}"}
 
-def list_evaluation_results_by_academic_year(connection, start_year):
-    end_year = start_year + 1
-    query = """
-    SELECT
-        O.ObjCode AS ObjectiveCode,
-        SO.SubObjCode AS SubObjectiveCode,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
-    JOIN Objectives O ON CO.ObjCode = O.ObjCode
-    LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
-    JOIN Section S ON E.SecID = S.SecID
-    JOIN Course C on C.CourseID = S.CourseID
-    WHERE
-        (S.Semester = 'Summer' AND S.Year = %s) OR
-        (S.Semester IN ('Fall', 'Spring') AND S.Year = %s)
-    ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
-    """
-    params = (start_year, end_year)
-    return execute_query(connection, query, params)
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
 
-def aggregate_evaluations_by_academic_year(connection, start_year):
-    end_year = start_year + 1
-    query = """
-    SELECT
-        o.ObjCode AS ObjectiveCode,
-        so.SubObjCode AS SubObjectiveCode,
-        COALESCE(SUM(oe.StudentsPassed), 0) AS StudentsPassed,
-        COALESCE(SUM(s.EnrollCount), 0) AS TotalStudents,
-        COALESCE(ROUND((SUM(oe.StudentsPassed) / NULLIF(SUM(s.EnrollCount), 0)) * 100, 2), 0) AS PercentagePassed
-    FROM Objectives o
-    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
-    LEFT JOIN CourseObjectives co ON o.ObjCode = co.ObjCode OR so.SubObjCode = co.SubObjCode
-    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
-    LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
-    WHERE
-        (s.Semester = 'Summer' AND s.Year = %s) OR
-        (s.Semester IN ('Fall', 'Spring') AND s.Year = %s)
-    GROUP BY o.ObjCode, so.SubObjCode
-    ORDER BY o.ObjCode, so.SubObjCode;
-    """
-    params = (start_year, end_year)
-    return execute_query(connection, query, params)
+@app.get("/list_courses_by_program/{program_name}")
+async def list_courses_by_program(program_name: str):
+    try:
+        query = """
+        SELECT
+            C.Title AS CourseTitle,
+            S.Year,
+            O.Description AS ObjectiveDescription,
+            SO.Description AS SubObjectivesDescription
+        FROM Course C
+        JOIN Section S ON C.CourseID = S.CourseID
+        JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
+        JOIN Objectives O ON CO.ObjCode = O.ObjCode
+        LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
+        WHERE C.DeptID = (SELECT DeptID FROM Program WHERE ProgName = %s)
+        ORDER BY C.Title, S.Year;
+        """
+        params = (program_name,)
+        result = help_functions.execute_query(connection, query, params)
+
+        if result:
+            courses_list = [
+                {
+                    "CourseTitle": record['CourseTitle'],
+                    "Year": record['Year'],
+                    "ObjectiveDescription": record['ObjectiveDescription'],
+                    "SubObjectivesDescription": record['SubObjectivesDescription'],
+                }
+                for record in result
+            ]
+            return {"courses": courses_list}
+        else:
+            return {"message": f"No courses found for program {program_name}"}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
+
+@app.get("/list_objectives_by_program/{program_name}")
+async def list_objectives_by_program(program_name: str):
+    try:
+        query = """
+        SELECT O.Description
+        FROM Objectives O
+        JOIN Program P ON P.ProgName = O.ProgName
+        WHERE O.ProgName = %s;
+        """
+        params = (program_name,)
+        result = help_functions.execute_query(connection, query, params)
+
+        if result:
+            objectives_list = [record['Description'] for record in result]
+            return {"objectives": objectives_list}
+        else:
+            return {"message": f"No objectives found for program {program_name}"}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
+
+@app.get("/list_evaluations_by_program_and_semester/{program_name}/{semester}/{year}")
+async def list_evaluations_by_program_and_semester(program_name: str, semester: str, year: int):
+    try:
+        query = """
+        SELECT
+            P.ProgName,
+            C.DeptID,
+            C.CourseID,
+            C.Title AS CourseTitle,
+            S.SecID,
+            S.FacultyLeadID,
+            E.Semester,
+            E.Year,
+            E.EvalMethod,
+            E.StudentsPassed
+        FROM ObjectiveEval E
+        JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
+        JOIN Course C ON S.CourseID = C.CourseID
+        JOIN Program P ON C.DeptID = P.DeptID
+        WHERE P.ProgName = %s AND E.Semester = %s AND E.Year = %s;
+        """
+        params = (program_name, semester, year)
+        result = help_functions.execute_query(connection, query, params)
+
+        if result:
+            evaluations_list = [
+                {
+                    "ProgName": record['ProgName'],
+                    "DeptID": record['DeptID'],
+                    "CourseID": record['CourseID'],
+                    "CourseTitle": record['CourseTitle'],
+                    "SecID": record['SecID'],
+                    "FacultyLeadID": record['FacultyLeadID'],
+                    "Semester": record['Semester'],
+                    "Year": record['Year'],
+                    "EvalMethod": record['EvalMethod'],
+                    "StudentsPassed": record['StudentsPassed'],
+                }
+                for record in result
+            ]
+            return {"evaluations": evaluations_list}
+        else:
+            return {"message": f"No evaluations found for program {program_name}, semester {semester}, and year {year}"}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
+
+@app.get("/list_evaluation_results_by_academic_year/{start_year}")
+async def list_evaluation_results_by_academic_year(start_year: int):
+    try:
+        end_year = start_year + 1
+        query = """
+        SELECT
+            O.ObjCode AS ObjectiveCode,
+            SO.SubObjCode AS SubObjectiveCode,
+            E.Semester,
+            E.Year,
+            E.EvalMethod,
+            E.StudentsPassed
+        FROM ObjectiveEval E
+        JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
+        JOIN Objectives O ON CO.ObjCode = O.ObjCode
+        LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
+        JOIN Section S ON E.SecID = S.SecID
+        JOIN Course C on C.CourseID = S.CourseID
+        WHERE
+            (S.Semester = 'Summer' AND S.Year = %s) OR
+            (S.Semester IN ('Fall', 'Spring') AND S.Year = %s)
+        ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+        """
+        params = (start_year, end_year)
+        result = help_functions.execute_query(connection, query, params)
+
+        if result:
+            evaluation_results_list = [
+                {
+                    "ObjectiveCode": record['ObjectiveCode'],
+                    "SubObjectiveCode": record['SubObjectiveCode'],
+                    "Semester": record['Semester'],
+                    "Year": record['Year'],
+                    "EvalMethod": record['EvalMethod'],
+                    "StudentsPassed": record['StudentsPassed'],
+                }
+                for record in result
+            ]
+            return {"evaluation_results": evaluation_results_list}
+        else:
+            return {"message": f"No evaluation results found for academic year {start_year}-{end_year}"}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
+
+@app.get("/aggregate_evaluations_by_academic_year/{start_year}")
+async def aggregate_evaluations_by_academic_year(start_year: int):
+    try:
+        end_year = start_year + 1
+        query = """
+        SELECT
+            o.ObjCode AS ObjectiveCode,
+            so.SubObjCode AS SubObjectiveCode,
+            COALESCE(SUM(oe.StudentsPassed), 0) AS StudentsPassed,
+            COALESCE(SUM(s.EnrollCount), 0) AS TotalStudents,
+            COALESCE(ROUND((SUM(oe.StudentsPassed) / NULLIF(SUM(s.EnrollCount), 0)) * 100, 2), 0) AS PercentagePassed
+        FROM Objectives o
+        LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
+        LEFT JOIN CourseObjectives co ON o.ObjCode = co.ObjCode OR so.SubObjCode = co.SubObjCode
+        LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
+        LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
+        WHERE
+            (s.Semester = 'Summer' AND s.Year = %s) OR
+            (s.Semester IN ('Fall', 'Spring') AND s.Year = %s)
+        GROUP BY o.ObjCode, so.SubObjCode
+        ORDER BY o.ObjCode, so.SubObjCode;
+        """
+        params = (start_year, end_year)
+        result = help_functions.execute_query(connection, query, params)
+
+        if result:
+            aggregated_results_list = [
+                {
+                    "ObjectiveCode": record['ObjectiveCode'],
+                    "SubObjectiveCode": record['SubObjectiveCode'],
+                    "StudentsPassed": record['StudentsPassed'],
+                    "TotalStudents": record['TotalStudents'],
+                    "PercentagePassed": record['PercentagePassed'],
+                }
+                for record in result
+            ]
+            return {"aggregated_results": aggregated_results_list}
+        else:
+            return {"message": f"No aggregated results found for academic year {start_year}-{end_year}"}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
