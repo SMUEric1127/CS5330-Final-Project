@@ -1,94 +1,105 @@
+import uvicorn
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
-import help_functions
-import sql_cmds
+from DatabaseProject import help_functions, sql_cmds
 import re
 import pandas as pd
-
-# alternative: import every thing:
-# from database_source.query import *
 from database_source.query import exampleQuery, exampleQueryParam
+import os
+from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
-connection = help_functions.connect_database(host_name='localhost',
-            user_name='root',
-            user_password='matt',
-            db_name='SMU')
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.back-env')
+load_dotenv(dotenv_path)
+print(dotenv_path)
+
+connection = help_functions.connect_database(
+    os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+
+
 class DepartmentQuery(BaseModel):
     department_id: str
 
+
 class ProgramQuery(BaseModel):
     program_name: str
+
 
 class ProgramAndSemesterQuery(BaseModel):
     program_name: str
     semester: str
     year: int
 
+
 class AcademicYearQuery(BaseModel):
     start_year: int
+
 
 @app.get("/")
 async def root():
     # Get something simple without any params
     return {"statusCode": 200, "result": exampleQuery()}
 
-
-@app.get("/params")
-async def root(param1: str = Query(..., description="Write your description for param1")):
-    # Get with param, in case we want to have some input from the user
-    # the ... in Query means it's required
-
-    result = exampleQueryParam(param1)
-    return {"message": "Successfully get!", "result": result}
+# Create Tables Function
 
 
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-
-@app.post("/create_user/")
-async def create_user(user: UserCreate):
-    # Example of post, if we want to send something more than just some params (a json...)
-    # Using Pydantic to make sure our data is validated (Like if we only want a username, password, not every other thing)
-
-    user_data = {"username": user.username, "password": user.password}
-
-    return {"message": "User created successfully using POST API", "user_data": user_data}
-
-#Create Tables Function 
-@app.post("/create_tables/", status_code=201)
+@app.get("/create_tables/")
 async def create_tables():
-     existing_tables = help_functions.check_table(connection)
-     required_tables = {
-        'department': sql_cmds.create_department_table,
-        'faculty': sql_cmds.create_faculty_table,
-        'program': sql_cmds.create_program_table,
-        'course': sql_cmds.create_course_table,
-        'section': sql_cmds.create_section_table,
-        'objectives': sql_cmds.create_objectives_table,
-        'subobjectives': sql_cmds.create_sub_objectives_table,
-        'courseobjectives': sql_cmds.create_course_objectives_table,
-        'objectiveeval': sql_cmds.create_objective_eval_table,
-    }
-     tables_to_create = [table for table in required_tables if table not in existing_tables]
+    statusCode = 200
+    try:
+        existing_tables = help_functions.valid_tables(connection)
+        required_tables = {
+            'department': sql_cmds.create_department_table,
+            'faculty': sql_cmds.create_faculty_table,
+            'program': sql_cmds.create_program_table,
+            'course': sql_cmds.create_course_table,
+            'section': sql_cmds.create_section_table,
+            'objectives': sql_cmds.create_objectives_table,
+            'subobjectives': sql_cmds.create_sub_objectives_table,
+            'courseobjectives': sql_cmds.create_course_objectives_table,
+            'objectiveeval': sql_cmds.create_objective_eval_table,
+        }
 
-     if tables_to_create:
-        for table in tables_to_create:
-            if help_functions.execute_query(connection, required_tables[table]):
-                message = f"Table '{table}' created successfully"
-                print(message)
-            else:
-                message = f"Table '{table}' created successfully"
-                print (message)
-        return{"message": "Tables created successfully"}
-     else:
-        return {"message": "All required tables already exist."}
+        # Convert both lists to lowercase
+        existing_tables_lower = [table.lower() for table in existing_tables]
+        required_tables_lower = [table.lower() for table in required_tables]
+
+        # Find tables to create (case-insensitive comparison)
+        tables_to_create = [
+            table for table in required_tables_lower if table not in existing_tables_lower]
+
+        if tables_to_create:
+            for table in tables_to_create:
+                if help_functions.execute_query(connection, required_tables[table]):
+                    statusCode = 200
+                    response_message = f"Table created successfully"
+                else:
+                    statusCode = 500
+                    response_message = f"Error occurred while creating table"
+        else:
+            statusCode = 201
+            response_message = "All required tables already exist."
+
+        return {"message": response_message, statusCode: statusCode}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}", statusCode: statusCode}
 
 
-#Clear a Certain Table 
-@app.post("/Clear a certain Table/{table_name}") 
+# Clear a Certain Table
+@app.post("/Clear a certain Table/{table_name}")
 async def delete_table(table_name: str):
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
@@ -112,25 +123,29 @@ async def delete_table(table_name: str):
         f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
         help_functions.execute_query(connection, f_key_on)
 
-#Clear All Tables
-@app.post("/clear_all_tables/")
+# Clear All Tables
+
+
+@app.get("/clear_all_tables/")
 async def clear_all_tables():
+    statusCode = 200
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
         help_functions.execute_query(connection, f_key_off)
 
-        for table in sql_cmds.clear_tables:
-            clear_table_query = f"TRUNCATE TABLE {table}"
+        for clear_table_query in sql_cmds.clear_tables:
             help_functions.execute_query(connection, clear_table_query)
 
         f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
         help_functions.execute_query(connection, f_key_on)
 
-        return {"message": "All tables cleared successfully"}
+        return {"message": "All tables cleared successfully", "statusCode": statusCode}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": statusCode}
 
-#Add Department 
+# Add Department
+
+
 @app.post("/add_department/")
 async def add_department(dept_name: str, dept_code: str):
     try:
@@ -140,7 +155,8 @@ async def add_department(dept_name: str, dept_code: str):
             dept_code = dept_code.upper()
 
             add_department_query = "INSERT INTO Department (DeptName, DeptID) VALUES (%s, %s)"
-            help_functions.execute_query(connection, add_department_query, (dept_name, dept_code))
+            help_functions.execute_query(
+                connection, add_department_query, (dept_name, dept_code))
 
             return {"message": "Department added successfully"}
         else:
@@ -148,13 +164,15 @@ async def add_department(dept_name: str, dept_code: str):
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-#Add Faculty Member 
+# Add Faculty Member
+
+
 @app.post("/add_faculty/")
 async def add_faculty(
-    faculty_id: str, 
-    name: str, 
-    email: str, 
-    dept_id: str, 
+    faculty_id: str,
+    name: str,
+    email: str,
+    dept_id: str,
     position: str
 ):
     try:
@@ -168,7 +186,8 @@ async def add_faculty(
                 "INSERT INTO Faculty (FacultyID, Name, Email, DeptID, Position) "
                 "VALUES (%s, %s, %s, %s, %s)"
             )
-            help_functions.execute_query(connection, add_faculty_query, (faculty_id, name, email, dept_id, position))
+            help_functions.execute_query(
+                connection, add_faculty_query, (faculty_id, name, email, dept_id, position))
 
             return {"message": "Faculty added successfully"}
         else:
@@ -176,13 +195,15 @@ async def add_faculty(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-#Add Program 
+# Add Program
+
+
 @app.post("/add_program/")
 async def add_program(
-    prog_name: str, 
-    dept_id: str, 
-    lead: str, 
-    lead_id: str, 
+    prog_name: str,
+    dept_id: str,
+    lead: str,
+    lead_id: str,
     lead_email: str
 ):
     try:
@@ -196,7 +217,8 @@ async def add_program(
                 "INSERT INTO Program (ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) "
                 "VALUES (%s, %s, %s, %s, %s)"
             )
-            help_functions.execute_query(connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email))
+            help_functions.execute_query(
+                connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email))
 
             return {"message": "Program added successfully"}
         else:
@@ -204,12 +226,14 @@ async def add_program(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-#Add Course    
+# Add Course
+
+
 @app.post("/add_course/")
 async def add_course(
-    course_id: str, 
-    title: str, 
-    description: str, 
+    course_id: str,
+    title: str,
+    description: str,
     dept_id: str
 ):
     try:
@@ -224,7 +248,8 @@ async def add_course(
                 "INSERT INTO Course (CourseID, Title, Description, DeptID) "
                 "VALUES (%s, %s, %s, %s)"
             )
-            help_functions.execute_query(connection, add_course_query, (course_id, title, description, dept_id))
+            help_functions.execute_query(
+                connection, add_course_query, (course_id, title, description, dept_id))
 
             return {"message": "Course added successfully"}
         else:
@@ -232,14 +257,16 @@ async def add_course(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-# Add a section     
+# Add a section
+
+
 @app.post("/add_section/")
 async def add_section(
-    sec_id: str, 
-    course_id: str, 
-    semester: str, 
-    year: int, 
-    faculty_lead_id: str, 
+    sec_id: str,
+    course_id: str,
+    semester: str,
+    year: int,
+    faculty_lead_id: str,
     enroll_count: int
 ):
     try:
@@ -260,13 +287,15 @@ async def add_section(
             return {"message": "Section not added: Invalid input"}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
-    
-#Add Objective 
+
+# Add Objective
+
+
 @app.post("/add_objective/")
 async def add_objective(
-    obj_code: str, 
-    description: str, 
-    prog: str, 
+    obj_code: str,
+    description: str,
+    prog: str,
     dept_id: str
 ):
     try:
@@ -275,7 +304,8 @@ async def add_objective(
             prog = prog.upper()
 
             checks_passed = True
-            result = help_functions.select_query(connection, sql_cmds.count_obj_query, (prog, dept_id))
+            result = help_functions.select_query(
+                connection, sql_cmds.count_obj_query, (prog, dept_id))
             count = result[0]['obj_count'] if result else 0
             next_obj_code = f"{prog}{dept_id}{count + 1}"
 
@@ -294,7 +324,8 @@ async def add_objective(
                     "INSERT INTO Objectives (ObjCode, Description, ProgName, DeptID) "
                     "VALUES (%s, %s, %s, %s)"
                 )
-                help_functions.execute_query(connection, add_objective_query, (obj_code, description, prog, dept_id))
+                help_functions.execute_query(
+                    connection, add_objective_query, (obj_code, description, prog, dept_id))
 
                 return {"message": "Objective added successfully"}
         else:
@@ -302,24 +333,28 @@ async def add_objective(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-# Add Sub Objective  
+# Add Sub Objective
+
+
 @app.post("/add_sub_objective/")
 async def add_sub_objective(
-    description: str, 
+    description: str,
     obj_code: str
 ):
     try:
         if help_functions.validate_sub_objective_input(description, obj_code):
             obj_code = obj_code.upper()
 
-            obj_exists = help_functions.select_query(connection, sql_cmds.check_obj_exists, (obj_code,))
+            obj_exists = help_functions.select_query(
+                connection, sql_cmds.check_obj_exists, (obj_code,))
             if not obj_exists or obj_exists[0]['obj_count'] == 0:
                 return {
                     "message": f"Learning objective code {obj_code} does not exist. "
                     "Sub-objective not added: please enter a valid learning objective code"
                 }
-            
-            result = help_functions.select_query(connection, sql_cmds.count_sub_obj_query, (obj_code,))
+
+            result = help_functions.select_query(
+                connection, sql_cmds.count_sub_obj_query, (obj_code,))
             count = result[0]['sub_obj_count'] if result else 0
             sub_obj_code = f"{obj_code}.{count + 1}"
 
@@ -327,20 +362,23 @@ async def add_sub_objective(
                 "INSERT INTO SubObjectives (SubObjCode, Description, ObjCode) "
                 "VALUES (%s, %s, %s)"
             )
-            help_functions.execute_query(connection, add_sub_objective_query, (sub_obj_code, description, obj_code))
+            help_functions.execute_query(
+                connection, add_sub_objective_query, (sub_obj_code, description, obj_code))
 
             return {"message": "Sub-objective added successfully"}
         else:
             return {"message": "Sub-objective not added: Invalid input"}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
-    
-# add new course objective 
+
+# add new course objective
+
+
 @app.post("/add_course_objective/")
 async def add_course_objective(
-    course_id: str, 
-    obj_code: str, 
-    sub_obj_code: str = None, 
+    course_id: str,
+    obj_code: str,
+    sub_obj_code: str = None,
     auto_populate: str = None
 ):
     try:
@@ -351,17 +389,20 @@ async def add_course_objective(
 
         checks_passed = True
 
-        course_exists = help_functions.select_query(connection, sql_cmds.check_course_exists, (course_id,))
+        course_exists = help_functions.select_query(
+            connection, sql_cmds.check_course_exists, (course_id,))
         if not course_exists or course_exists[0]['course_count'] == 0:
             return {"message": f"Course number {course_id} does not exist. Course objective not added: Invalid input"}
 
-        obj_exists = help_functions.select_query(connection, sql_cmds.check_obj_exists, (obj_code,))
+        obj_exists = help_functions.select_query(
+            connection, sql_cmds.check_obj_exists, (obj_code,))
         if not obj_exists or obj_exists[0]['obj_count'] == 0:
             return {"message": f"Learning objective code {obj_code} does not exist. "
                                "Course objective not added: Invalid input"}
 
         if sub_obj_code:
-            sub_obj_code_exists = help_functions.select_query(connection, sql_cmds.check_sub_obj_exists, (sub_obj_code,))
+            sub_obj_code_exists = help_functions.select_query(
+                connection, sql_cmds.check_sub_obj_exists, (sub_obj_code,))
             if not sub_obj_code_exists or sub_obj_code_exists[0]['sub_obj_count'] == 0:
                 return {"message": f"Sub-objective code {sub_obj_code} does not exist. "
                                    "Course objective not added: Invalid input"}
@@ -371,12 +412,14 @@ async def add_course_objective(
             "INSERT INTO CourseObjectives (CourseObjID, CourseID, ObjCode, SubObjCode) "
             "VALUES (%s, %s, %s, %s)"
         )
-        help_functions.execute_query(connection, add_course_obj_query, (course_obj_id, course_id, obj_code, sub_obj_code))
+        help_functions.execute_query(
+            connection, add_course_obj_query, (course_obj_id, course_id, obj_code, sub_obj_code))
 
         # If no sub_obj_code was provided and auto_populate is 'y', add all associated sub-objectives
         if not sub_obj_code and auto_populate == 'y':
             # Check if the objective has sub-objectives
-            sub_objectives = help_functions.select_query(connection, sql_cmds.get_sub_objectives, (obj_code,))
+            sub_objectives = help_functions.select_query(
+                connection, sql_cmds.get_sub_objectives, (obj_code,))
             if sub_objectives:
                 for sub_obj in sub_objectives:
                     sub_obj_code = sub_obj['SubObjCode']
@@ -389,11 +432,13 @@ async def add_course_objective(
         return {"message": "Course objective added successfully"}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
-    
+
 # delete a record from the database with multiple conditions
+
+
 @app.post("/delete_records/")
 async def delete_records(
-    table: str, 
+    table: str,
     conditions_input: str
 ):
     try:
@@ -430,12 +475,14 @@ async def delete_records(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
-# update a record in the database with multiple conditions    
+# update a record in the database with multiple conditions
+
+
 @app.post("/update_record/")
 async def update_record(
-    table: str, 
-    update_attribute: str, 
-    new_value: str, 
+    table: str,
+    update_attribute: str,
+    new_value: str,
     conditions_input: str
 ):
     try:
@@ -469,10 +516,12 @@ async def update_record(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
 
+
 def list_programs_by_department(department_id):
-    query = "SELECT ProgName FROM Program WHERE DeptID = %s;"
+    query = "SELECT DeptID, ProgName FROM Program WHERE DeptID = %s;"
     params = (department_id,)
     return help_functions.execute_query(connection, query, params)
+
 
 def list_faculty_by_department(department_id):
     query = """
@@ -490,6 +539,7 @@ def list_faculty_by_department(department_id):
     """
     params = (department_id,)
     return help_functions.execute_query(connection, query, params)
+
 
 def list_courses_by_program(program_name):
     query = """
@@ -509,6 +559,7 @@ def list_courses_by_program(program_name):
     params = (program_name,)
     return help_functions.execute_query(connection, query, params)
 
+
 def list_objectives_by_program(program_name):
     query = """
     SELECT O.Description
@@ -518,6 +569,7 @@ def list_objectives_by_program(program_name):
     """
     params = (program_name,)
     return help_functions.execute_query(connection, query, params)
+
 
 def list_evaluations_by_program_and_semester(program_name, semester, year):
     query = """
@@ -540,6 +592,7 @@ def list_evaluations_by_program_and_semester(program_name, semester, year):
     """
     params = (program_name, semester, year)
     return help_functions.execute_query(connection, query, params)
+
 
 def list_evaluation_results_by_academic_year(start_year):
     end_year = start_year + 1
@@ -565,6 +618,7 @@ def list_evaluation_results_by_academic_year(start_year):
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
 
+
 def aggregate_evaluations_by_academic_year(start_year):
     end_year = start_year + 1
     query = """
@@ -588,6 +642,7 @@ def aggregate_evaluations_by_academic_year(start_year):
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
 
+
 @app.post("/list_programs_by_department/")
 async def list_programs_endpoint(query: DepartmentQuery):
     # connect to the database
@@ -597,6 +652,7 @@ async def list_programs_endpoint(query: DepartmentQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/list_faculty_by_department/")
 async def list_faculty_endpoint(query: DepartmentQuery):
     try:
@@ -604,6 +660,7 @@ async def list_faculty_endpoint(query: DepartmentQuery):
         return {"faculty": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/list_courses_by_program/")
 async def list_courses_endpoint(query: ProgramQuery):
@@ -613,6 +670,7 @@ async def list_courses_endpoint(query: ProgramQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/list_objectives_by_program/")
 async def list_objectives_endpoint(query: ProgramQuery):
     try:
@@ -621,13 +679,16 @@ async def list_objectives_endpoint(query: ProgramQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/list_evaluations_by_program_and_semester/")
 async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
     try:
-        result = list_evaluations_by_program_and_semester(query.program_name, query.semester, query.year)
+        result = list_evaluations_by_program_and_semester(
+            query.program_name, query.semester, query.year)
         return {"evaluations": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/list_evaluation_results_by_academic_year/")
 async def list_evaluation_results_endpoint(query: AcademicYearQuery):
@@ -636,3 +697,7 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
         return {"evaluation_results": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
