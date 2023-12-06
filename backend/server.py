@@ -473,22 +473,48 @@ class ObjectiveEvalInput(BaseModel):
 
 @app.post("/add_objective_evaluation")
 async def add_objective_evaluation(input_data: ObjectiveEvalInput):
-    input_data.secID = input_data.secID.zfill(3)
-    input_data.courseObjID = input_data.courseObjID.upper()
-    input_data.semester = input_data.semester.title()
-    input_data.evalMethod = input_data.evalMethod.title()
+    try:
+        secID = input_data.secID.zfill(3)
+        message, success = help_functions.validate_obj_eval_input(
+            input_data.courseObjID, input_data.secID, input_data.semester, input_data.year, input_data.evalMethod, input_data.studentsPassed)
+        if success:
+            courseObjID = input_data.courseObjID.upper()
+            courseID = input_data.courseObjID.split('.')[0]
+            semester = input_data.semester
+            evalMethod = input_data.evalMethod
+            studentsPassed = input_data.studentsPassed
+            year = input_data.year
+            checks_passed = True
 
-    message, success = help_functions.validate_obj_eval_input(input_data.courseObjID, input_data.secID, input_data.semester,
-                                                              input_data.year, input_data.evalMethod, input_data.studentsPassed)
+            course_obj_id_exists = help_functions.select_query(
+                connection, sql_cmds.check_course_obj_id_exists, (courseObjID,))
+            if not course_obj_id_exists or course_obj_id_exists[0]['course_obj_count'] == 0:
+                return {"message": f"Course objective ID {courseObjID} does not exist. Objective evaluation not added.", "statusCode": 500}
 
-    if not success:
-        return {"message": f"An error occurred: {str(message)}", "statusCode": 500}
+            section_exists = help_functions.select_query(
+                connection, sql_cmds.check_section_exists, (courseID, secID, semester, year))
+            if not section_exists or section_exists[0]['section_count'] == 0:
+                return {"message": f"Section ID {secID} does not exist. Objective evaluation not added.", "statusCode": 500}
 
-    return {"message": "Objective evaluation need implementation (Convert logic to api)", "statusCode": 200}
-    # return {"message": "Objective evaluation added successfully"}
+            student_count = help_functions.select_query(
+                connection, sql_cmds.get_student_count, (courseID, secID, semester, year))
+            if studentsPassed > student_count[0]['EnrollCount']:
+                return {"message": f"Students passed ({studentsPassed}) cannot be greater than enrollment count ({student_count[0]['EnrollCount']}). Objective evaluation not added.", "statusCode": 500}
 
+            add_obj_eval = ("INSERT INTO ObjectiveEval ("
+                            "CourseObjID, SecID, Semester, Year, EvalMethod, StudentsPassed) VALUES ("
+                            "%s, %s, %s, %s, %s, %s)")
 
-# delete a record from the database with multiple conditions
+            if help_functions.execute_query(
+                    connection, add_obj_eval, (courseObjID, secID, semester, year, evalMethod, studentsPassed)):
+                return {"message": "Objective evaluation added successfully.", "statusCode": 200}
+            else:
+                return {"message": "Objective evaluation not added!", "statusCode": 500}
+        else:
+            return {"message": "Objective evaluation not added!", "statusCode": 500}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
 @app.post("/delete_records/")
