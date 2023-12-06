@@ -322,7 +322,7 @@ async def add_objective(
             result = help_functions.select_query(
                 connection, sql_cmds.count_obj_query, (prog, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{prog[:3]}{dept_id}{count + 1}"
+            next_obj_code = f"{prog}{dept_id}{count + 1}"
 
             if obj_code and obj_code != next_obj_code:
                 return {
@@ -433,7 +433,7 @@ async def add_course_objective(
                 return {"message": f"Sub-objective code {sub_obj_code} does not exist. "
                                    "Course objective not added: Invalid input", "statusCode": 500}
 
-        course_obj_id = f"{course_id}.{obj_code}.{sub_obj_code}" if sub_obj_code else f"{course_id}.{obj_code}"
+        course_obj_id = f"{course_id}.{sub_obj_code}" if sub_obj_code else f"{course_id}.{obj_code}"
         add_course_obj_query = (
             "INSERT INTO CourseObjectives (CourseObjID, CourseID, ObjCode, SubObjCode) "
             "VALUES (%s, %s, %s, %s)"
