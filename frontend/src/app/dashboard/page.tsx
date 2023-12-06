@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [isDataEntryOpen, setIsDataEntryOpen] = useState(false);
