@@ -60,7 +60,7 @@ async def create_user(user: UserCreate):
 #Create Tables Function 
 @app.post("/create_tables/", status_code=201)
 async def create_tables():
-     existing_tables = help_functions.check_table(connection)
+     existing_tables = help_functions.valid_tables(connection)
      required_tables = {
         'department': sql_cmds.create_department_table,
         'faculty': sql_cmds.create_faculty_table,
@@ -88,11 +88,11 @@ async def create_tables():
 
 
 #Clear a Certain Table 
-@app.post("/Clear a certain Table/{table_name}") 
+@app.post("/clear_table/{table_name}")
 async def delete_table(table_name: str):
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
-        help_functions.execute_query(connection, f_key_off)
+        await help_functions.execute_query(connection, f_key_off)
 
         table_name = table_name.lower()
         valid_tables = help_functions.valid_tables(connection)
@@ -102,9 +102,9 @@ async def delete_table(table_name: str):
         else:
             try:
                 delete_table_query = f"DROP TABLE IF EXISTS {table_name}"
-                help_functions.execute_query(connection, delete_table_query)
+                await help_functions.execute_query(connection, delete_table_query)
                 f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
-                help_functions.execute_query(connection, f_key_on)
+                await help_functions.execute_query(connection, f_key_on)
                 return {"message": f"Table {table_name} successfully deleted"}
             except Exception as e:
                 return {"message": f"An error occurred: {str(e)}"}
@@ -634,5 +634,13 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
     try:
         result = list_evaluation_results_by_academic_year(query.start_year)
         return {"evaluation_results": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/list_aggregate_results_by_academic_year/")
+async def list_aggregation_results_endpoint(query: AcademicYearQuery):
+    try:
+        result = aggregate_evaluations_by_academic_year(query.start_year)
+        return {"aggregated_results": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

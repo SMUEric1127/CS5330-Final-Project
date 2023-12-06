@@ -1,6 +1,5 @@
 import mysql.connector
 from mysql.connector import Error
-import sql_cmds
 import re
 
 def connect_database(host_name, user_name, user_password, db_name):
