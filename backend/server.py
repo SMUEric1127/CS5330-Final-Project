@@ -271,7 +271,7 @@ async def add_course(
 # Add a section
 
 
-@app.post("/add_section/")
+@app.get("/add_section/")
 async def add_section(
     sec_id: str,
     course_id: str,
@@ -282,7 +282,9 @@ async def add_section(
 ):
     try:
         sec_id = sec_id.zfill(3)
-        if help_functions.validate_section_input(sec_id, course_id, semester, year, faculty_lead_id, enroll_count):
+        message, success = help_functions.validate_section_input(
+            sec_id, course_id, semester, year, faculty_lead_id, enroll_count)
+        if success:
             course_id = course_id.upper()
             semester = semester.title()
 
@@ -290,19 +292,19 @@ async def add_section(
                 "INSERT INTO Section (SecID, CourseID, Semester, Year, FacultyLeadID, EnrollCount) "
                 "VALUES (%s, %s, %s, %s, %s, %s)"
             )
-            help_functions.execute_query(
-                connection, add_section_query, (sec_id, course_id, semester, year, faculty_lead_id, enroll_count))
 
-            return {"message": "Section added successfully"}
+            if help_functions.execute_query(
+                    connection, add_section_query, (sec_id, course_id, semester, year, faculty_lead_id, enroll_count)):
+                return {"message": "Section added successfully", "statusCode": 200}
+            else:
+                return {"message": "Cannot add course!", "statusCode": 500}
         else:
-            return {"message": "Section not added: Invalid input"}
+            return {"message": "Cannot add section, invalid input", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
-
-# Add Objective
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@app.post("/add_objective/")
+@app.get("/add_objective/")
 async def add_objective(
     obj_code: str,
     description: str,
@@ -676,7 +678,7 @@ async def list_faculty_endpoint(query: DepartmentQuery):
 @app.post("/list_courses_by_program/")
 async def list_courses_endpoint(query: ProgramQuery):
     try:
-        result = list_courses_by_program(query.program_name)
+        result = list_courses_by_program(query.program_name.upper())
         return {"courses": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -685,7 +687,7 @@ async def list_courses_endpoint(query: ProgramQuery):
 @app.post("/list_objectives_by_program/")
 async def list_objectives_endpoint(query: ProgramQuery):
     try:
-        result = list_objectives_by_program(query.program_name)
+        result = list_objectives_by_program(query.program_name.upper())
         return {"objectives": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -695,7 +697,7 @@ async def list_objectives_endpoint(query: ProgramQuery):
 async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
     try:
         result = list_evaluations_by_program_and_semester(
-            query.program_name, query.semester, query.year)
+            query.program_name.upper(), query.semester, query.year)
         return {"evaluations": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
