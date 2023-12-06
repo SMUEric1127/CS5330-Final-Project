@@ -23,7 +23,6 @@ const CreateTable = () => {
   };
   return (
     <div className="container min-h-[30vh] text-lg items-center text-start space-y-5">
-      <p>Select List of Actions below</p>
       <div className="flex-col space-y-5">
         <PopupComponent
           onConfirm={() => {
@@ -51,16 +50,15 @@ const CreateTable = () => {
           description="This action cannot be undone. This will permanently delete your table"
         />
       </div>
-      <div className="text-start font-bold pt-5">
-        DOCUMENTATION
-        <div className="font-normal">
-          <b>Create Tables:</b> This will create the table
-          <br />
-          <b>Clear Tables:</b> This will clear the table given the table name
-          <br />
-          <b>All Tables:</b> This will clear all the table
-        </div>
-      </div>
+      {/* <div className="text-start pt-5 text-normal font-light italic">
+        Notes:
+        <br />
+        Create Tables: This will create the table
+        <br />
+        Clear Tables: This will clear the table given the table name
+        <br />
+        All Tables: This will clear all the table
+      </div> */}
     </div>
   );
 };

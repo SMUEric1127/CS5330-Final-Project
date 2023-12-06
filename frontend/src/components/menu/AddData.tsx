@@ -7,6 +7,9 @@ import { AddDepartment } from "./AddDataComponents/AddDepartment";
 import AddFaculty from "./AddDataComponents/AddFaculty";
 import { AddProgram } from "./AddDataComponents/AddProgram";
 import AddCourse from "./AddDataComponents/AddCourse";
+import AddSection from "./AddDataComponents/AddSection";
+import AddObjective from "./AddDataComponents/AddObjective";
+import AddSubObjective from "./AddDataComponents/AddSubObjective";
 
 export const AddData = () => {
   // Add Department
@@ -38,9 +41,29 @@ export const AddData = () => {
     dept_id: "",
   });
 
+  const [sectionData, setSectionData] = useState({
+    secID: "",
+    courseID: "",
+    semester: "",
+    year: "",
+    facultyLeadID: "",
+    enrollCount: "",
+  });
+
+  const [objectiveData, setObjectiveData] = useState({
+    objCode: "",
+    description: "",
+    prog: "",
+    dept_id: "",
+  });
+
+  const [subObjectiveData, setSubObjectiveData] = useState({
+    description: "",
+    objCode: "",
+  });
+
   return (
     <div className="container min-h-[30vh] text-lg items-center text-start space-y-5">
-      <p>Select List of Actions below</p>
       <div className="flex-col space-y-5">
         <PopupComponent
           onConfirm={() => {
@@ -96,22 +119,46 @@ export const AddData = () => {
           }
         />
         <PopupComponent
-          onConfirm={() => {}}
+          onConfirm={() => {
+            console.log(
+              `Creating section with: ${sectionData.secID}, ${sectionData.courseID}, ${sectionData.semester}, ${sectionData.year}, ${sectionData.facultyLeadID}, ${sectionData.enrollCount}`
+            );
+          }}
           buttonTitle="Add Section"
-          title="Are you absolutely sure?"
-          description="This action cannot be undone. This will permanently delete your table"
+          description={
+            <AddSection
+              sectionData={sectionData}
+              setSectionData={setSectionData}
+            />
+          }
         />
         <PopupComponent
-          onConfirm={() => {}}
+          onConfirm={() => {
+            console.log(
+              `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog}, ${objectiveData.dept_id}`
+            );
+          }}
           buttonTitle="Add Objective"
-          title="Are you absolutely sure?"
-          description="This action cannot be undone. This will permanently delete your table"
+          description={
+            <AddObjective
+              objectiveData={objectiveData}
+              setObjectiveData={setObjectiveData}
+            />
+          }
         />
         <PopupComponent
-          onConfirm={() => {}}
+          onConfirm={() => {
+            console.log(
+              `Creating sub-objective with: ${subObjectiveData.description}, ${subObjectiveData.objCode}`
+            );
+          }}
           buttonTitle="Add Sub-Objective"
-          title="Are you absolutely sure?"
-          description="This action cannot be undone. This will permanently delete your table"
+          description={
+            <AddSubObjective
+              subObjectiveData={subObjectiveData}
+              setSubObjectiveData={setSubObjectiveData}
+            />
+          }
         />
       </div>
     </div>

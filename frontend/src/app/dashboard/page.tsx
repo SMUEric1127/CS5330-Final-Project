@@ -1,7 +1,9 @@
 "use client";
 import NavigationMain from "@/components/NavigationMain";
 import { AddData } from "@/components/menu/AddData";
+import { AssignCourseObjective } from "@/components/menu/AssignCourseObjective";
 import CreateTable from "@/components/menu/CreateTable";
+import { SectionEvaluation } from "@/components/menu/SectionEvaluation";
 import {
   Card,
   CardContent,
@@ -13,6 +15,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [isDataEntryOpen, setIsDataEntryOpen] = useState(false);
+  const [isDataQueryingOpen, setIsDataQueryingOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
   const { toast } = useToast();
 
@@ -26,22 +30,43 @@ export default function Home() {
   const dataEntryTabs = [
     { id: 1, label: "Tables Manipulation" },
     { id: 2, label: "Add Data" },
-    // { id: 3, label: "Add Faculty" },
-    // { id: 4, label: "Add Programs" },
-    // { id: 5, label: "Add Courses" },
-    // { id: 6, label: "Add Sections" },
+    { id: 3, label: "Assign Course Objective" },
+    { id: 4, label: "Section Evaluation Input" },
+  ];
+
+  const dataQueryingTabs = [
+    { id: 1, label: "By Department" },
+    { id: 2, label: "By Program" },
+    { id: 3, label: "By Semester and Program" },
+    { id: 4, label: "By Academic Year" },
   ];
 
   const handleTabClick = (tabId: number) => {
     setActiveTab(tabId);
   };
 
-  const renderContent = () => {
+  const renderContentDataEntry = () => {
     switch (activeTab) {
+      case 0:
+        return "Empty, select a category";
       case 1:
         return <CreateTable />;
       case 2:
         return <AddData />;
+      case 3:
+        return <AssignCourseObjective />;
+      case 4:
+        return <SectionEvaluation />;
+      default:
+        return null;
+    }
+  };
+
+  const renderContentDataQuerying = () => {
+    switch (activeTab) {
+      case 0:
+        return "Empty, select a category";
+
       default:
         return null;
     }
@@ -52,7 +77,7 @@ export default function Home() {
       <NavigationMain />
       <div className="container h-full">
         <div className="flex flex-row space-x-10 min-h-screen">
-          <div className="flex-2 w-[30%] py-20">
+          <div className="flex-2 w-[30%] py-20 max-h-[80vh] overflow-auto">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Menu</CardTitle>
@@ -62,19 +87,54 @@ export default function Home() {
                   <p className="text-xs pb-5">
                     Choose either Data Entry or Querying Data
                   </p>
-                  {dataEntryTabs.map((tab) => (
-                    <div
-                      key={tab.id}
-                      className={`cursor-pointer p-4 border-b duration-300 hover:border-b-primary ${
-                        activeTab === tab.id
-                          ? "border-primary bg-blue-50"
-                          : "border-gray-300"
-                      }`}
-                      onClick={() => handleTabClick(tab.id)}
-                    >
-                      {tab.label}
-                    </div>
-                  ))}
+                  <div
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${
+                      isDataEntryOpen ? "border-primary" : "border-gray-300"
+                    }`}
+                    onClick={() => {
+                      setIsDataQueryingOpen(isDataEntryOpen);
+                      setIsDataEntryOpen(!isDataEntryOpen);
+                      setActiveTab(0);
+                    }}
+                  >
+                    Data Entry
+                  </div>
+                  {isDataEntryOpen &&
+                    dataEntryTabs.map((tab, index) => (
+                      <div
+                        key={tab.id}
+                        className={`cursor-pointer p-2 border-b duration-300 hover:border-b-primary `}
+                        onClick={() => handleTabClick(tab.id)}
+                        style={{ marginLeft: "20px", fontSize: "0.9em" }} // Adjust the styles here
+                      >
+                        {`${index + 1}. ${tab.label}`} {/* Add an index */}
+                      </div>
+                    ))}
+
+                  <div
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${
+                      isDataQueryingOpen ? "border-primary" : "border-gray-300"
+                    }`}
+                    onClick={() => {
+                      setIsDataEntryOpen(isDataQueryingOpen);
+                      setIsDataQueryingOpen(!isDataQueryingOpen);
+                      setActiveTab(0);
+                    }}
+                  >
+                    Data Querying
+                  </div>
+
+                  {isDataQueryingOpen &&
+                    dataQueryingTabs.map((tab, index) => (
+                      <div
+                        key={tab.id}
+                        className={`cursor-pointer p-2 border-b duration-300 hover:border-b-primary `}
+                        onClick={() => handleTabClick(tab.id)}
+                        style={{ marginLeft: "20px", fontSize: "0.9em" }} // Adjust the styles here
+                      >
+                        {`${index + 1}. ${tab.label}`} {/* Add an index */}
+                      </div>
+                    ))}
                 </CardDescription>
               </CardContent>
             </Card>
@@ -86,8 +146,18 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  <p className="text-xs pb-5">Populates the form fields</p>
-                  {renderContent()}
+                  {(activeTab == 3 || activeTab == 4) && isDataEntryOpen && (
+                    <p className="text-xs pb-5">Populates the form fields</p>
+                  )}
+                  {(activeTab == 1 || activeTab == 2) && isDataEntryOpen && (
+                    <p className="text-xs pb-0">Select List of Actions below</p>
+                  )}
+
+                  {isDataQueryingOpen && activeTab != 0 && (
+                    <p className="text-xs pb-0">Select List of Actions below</p>
+                  )}
+                  {isDataEntryOpen && renderContentDataEntry()}
+                  {isDataQueryingOpen && renderContentDataQuerying()}
                 </CardDescription>
               </CardContent>
             </Card>
