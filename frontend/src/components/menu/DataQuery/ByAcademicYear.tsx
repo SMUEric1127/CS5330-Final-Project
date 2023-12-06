@@ -91,9 +91,12 @@ export const ByAcademicYear = () => {
       </div>
       {activeQuery == "Evaluation" && (
         <Table>
-          <TableCaption>
-            Evaluation results for the academic year starting from {startYear}.
-          </TableCaption>
+          {startYear && (
+            <TableCaption>
+              Evaluation results for the academic year starting from {startYear}
+              .
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
@@ -122,10 +125,12 @@ export const ByAcademicYear = () => {
       )}
       {activeQuery == "Aggregated" && (
         <Table>
-          <TableCaption>
-            Aggregated student percentage for the academic year starting from{" "}
-            {startYear}.
-          </TableCaption>
+          {startYear && (
+            <TableCaption>
+              Aggregated student percentage for the academic year starting from{" "}
+              {startYear}.
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
@@ -133,7 +138,7 @@ export const ByAcademicYear = () => {
               <TableHead>SubObjective Code</TableHead>
               <TableHead>Students Passed</TableHead>
               <TableHead>Total Students</TableHead>
-              <TableHead>Percentage Passed</TableHead>
+              <TableHead>Percentage Passed (%)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,7 +149,7 @@ export const ByAcademicYear = () => {
                 <TableCell>{data[1]}</TableCell>
                 <TableCell>{data[2]}</TableCell>
                 <TableCell>{data[3]}</TableCell>
-                <TableCell>{data[4]}</TableCell>
+                <TableCell>{data[4]} %</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -55,7 +55,7 @@ export const ByProgramAndSemester = () => {
 
   return (
     <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
-      <div className="w-fit flex flex-row space-x-5 p-1">
+      <div className="w-full flex flex-row space-x-5 p-1">
         <Input
           placeholder="Enter the program name"
           onChange={(e) => {

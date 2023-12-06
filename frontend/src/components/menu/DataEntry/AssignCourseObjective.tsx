@@ -108,7 +108,7 @@ export const AssignCourseObjective = () => {
               assignCourseObjectiveData.objCode
             )}&sub_obj_code=${encodeURIComponent(
               assignCourseObjectiveData.subObjCode
-            )}&populate=${encodeURIComponent(
+            )}&auto_populate=${encodeURIComponent(
               assignCourseObjectiveData.populate
             )}`;
 
@@ -120,6 +120,9 @@ export const AssignCourseObjective = () => {
           description={"Are you sure you want to assign the objective?"}
         />
       </div>
+      <br />
+      Note: If not given a sub-objective code and auto populate is "Yes" it will
+      automatically assigns all sub-objectives.
     </div>
   );
 };

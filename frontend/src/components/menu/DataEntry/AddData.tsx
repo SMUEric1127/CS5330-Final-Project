@@ -236,7 +236,9 @@ export const AddData = () => {
               objectiveData.description
             )}&prog=${encodeURIComponent(
               objectiveData.prog
-            )}&dept_id=${encodeURIComponent(objectiveData.dept_id)}`;
+            )}&dept_id=${encodeURIComponent(
+              objectiveData.dept_id
+            )}&obj_code=${encodeURIComponent(objectiveData.objCode)}`;
             const successMessage = "Objective added";
             sendQuery(url, successMessage);
           }}

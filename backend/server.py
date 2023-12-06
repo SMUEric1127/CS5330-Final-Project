@@ -443,7 +443,7 @@ async def add_course_objective(
             return {"message": "Cannot add course objective!", "statusCode": 500}
 
         # If no sub_obj_code was provided and auto_populate is 'y', add all associated sub-objectives
-        if not sub_obj_code and auto_populate == 'Yes':
+        if not sub_obj_code and auto_populate == 'yes':
             # Check if the objective has sub-objectives
             sub_objectives = help_functions.select_query(
                 connection, sql_cmds.get_sub_objectives, (obj_code,))
