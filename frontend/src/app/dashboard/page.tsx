@@ -4,7 +4,10 @@ import { AddData } from "@/components/menu/DataEntry/AddData";
 import { AssignCourseObjective } from "@/components/menu/DataEntry/AssignCourseObjective";
 import CreateTable from "@/components/menu/DataEntry/CreateTable";
 import { SectionEvaluation } from "@/components/menu/DataEntry/SectionEvaluation";
+import { ByAcademicYear } from "@/components/menu/DataQuery/ByAcademicYear";
 import { ByDepartment } from "@/components/menu/DataQuery/ByDepartment";
+import { ByProgram } from "@/components/menu/DataQuery/ByProgram";
+import { ByProgramAndSemester } from "@/components/menu/DataQuery/ByProgramAndSemester";
 import {
   Card,
   CardContent,
@@ -49,7 +52,7 @@ export default function Home() {
   const renderContentDataEntry = () => {
     switch (activeTab) {
       case 0:
-        return "Empty, select a category";
+        return <p className="text-xs pb-5">Empty, select a category</p>;
       case 1:
         return <CreateTable />;
       case 2:
@@ -66,9 +69,15 @@ export default function Home() {
   const renderContentDataQuerying = () => {
     switch (activeTab) {
       case 0:
-        return "Empty, select a category";
+        return <p className="text-xs pb-5">Empty, select a category</p>;
       case 1:
         return <ByDepartment />;
+      case 2:
+        return <ByProgram />;
+      case 3:
+        return <ByProgramAndSemester />;
+      case 4:
+        return <ByAcademicYear />;
       default:
         return null;
     }
@@ -77,9 +86,9 @@ export default function Home() {
   return (
     <div className="min-h-screen w-screen">
       <NavigationMain />
-      <div className="container h-full">
+      <div className="w-max[90vw] px-10 h-full items-center justify-center">
         <div className="flex flex-row space-x-10 min-h-screen">
-          <div className="flex-2 w-[30%] py-20 max-h-[80vh] overflow-auto">
+          <div className="flex-2 max-w-[30%] w-fit py-20 max-h-[80vh] overflow-auto">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Menu</CardTitle>
@@ -155,9 +164,9 @@ export default function Home() {
                     <p className="text-xs pb-0">Select List of Actions below</p>
                   )}
 
-                  {/* {isDataQueryingOpen && activeTab != 0 && (
-                    // <p className="text-xs pb-0">Select List of Actions below</p>
-                  )} */}
+                  {isDataQueryingOpen && activeTab != 0 && (
+                    <p className="text-xs pb-3">Enter the information below</p>
+                  )}
                   {isDataEntryOpen && renderContentDataEntry()}
                   {isDataQueryingOpen && renderContentDataQuerying()}
                 </CardDescription>
