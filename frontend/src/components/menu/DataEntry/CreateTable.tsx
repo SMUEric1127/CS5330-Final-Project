@@ -1,8 +1,8 @@
 import React, { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "../ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
-import { PopupComponent } from "../core/PopupComponent";
+import { PopupComponent } from "@/components/core/PopupComponent";
 
 const CreateTable = () => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
@@ -22,7 +22,7 @@ const CreateTable = () => {
     );
   };
   return (
-    <div className="container min-h-[30vh] text-lg items-center text-start space-y-5">
+    <div className="min-h-[30vh] text-lg items-center text-start space-y-5">
       <div className="flex-col space-y-5">
         <PopupComponent
           onConfirm={() => {

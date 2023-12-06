@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "../ui/button";
-import { PopupComponent } from "../core/PopupComponent";
+import { Button } from "@/components/ui/button";
+import { PopupComponent } from "@/components/core/PopupComponent";
 
 export const AssignCourseObjective = () => {
   const [assignCourseObjectiveData, setAssignCourseObjectiveData] = useState({

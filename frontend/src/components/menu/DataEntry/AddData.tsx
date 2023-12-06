@@ -1,15 +1,15 @@
 import React, { useRef, useState } from "react";
-import { Button } from "../ui/button";
-import { useToast } from "../ui/use-toast";
-import { PopupComponent } from "../core/PopupComponent";
-import { Input } from "../ui/input";
-import { AddDepartment } from "./AddDataComponents/AddDepartment";
-import AddFaculty from "./AddDataComponents/AddFaculty";
-import { AddProgram } from "./AddDataComponents/AddProgram";
-import AddCourse from "./AddDataComponents/AddCourse";
-import AddSection from "./AddDataComponents/AddSection";
-import AddObjective from "./AddDataComponents/AddObjective";
-import AddSubObjective from "./AddDataComponents/AddSubObjective";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { PopupComponent } from "@/components/core/PopupComponent";
+import { Input } from "@/components/ui/input";
+import { AddDepartment } from "@/components/menu/DataEntry/AddDataComponents/AddDepartment";
+import AddFaculty from "@/components/menu/DataEntry/AddDataComponents/AddFaculty";
+import { AddProgram } from "@/components/menu/DataEntry/AddDataComponents/AddProgram";
+import AddCourse from "@/components/menu/DataEntry/AddDataComponents/AddCourse";
+import AddSection from "@/components/menu/DataEntry/AddDataComponents/AddSection";
+import AddObjective from "@/components/menu/DataEntry/AddDataComponents/AddObjective";
+import AddSubObjective from "@/components/menu/DataEntry/AddDataComponents/AddSubObjective";
 
 export const AddData = () => {
   // Add Department
@@ -63,7 +63,7 @@ export const AddData = () => {
   });
 
   return (
-    <div className="container min-h-[30vh] text-lg items-center text-start space-y-5">
+    <div className="min-h-[30vh] text-lg items-center text-start space-y-5">
       <div className="flex-col space-y-5">
         <PopupComponent
           onConfirm={() => {

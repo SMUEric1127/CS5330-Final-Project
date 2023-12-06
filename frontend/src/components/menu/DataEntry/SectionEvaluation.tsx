@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { PopupComponent } from "../core/PopupComponent";
+import { PopupComponent } from "@/components/core/PopupComponent";
 
 export const SectionEvaluation = () => {
   const [evaluateObjectiveData, setEvaluateObjectiveData] = useState({

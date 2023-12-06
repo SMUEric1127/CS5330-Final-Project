@@ -1,9 +1,10 @@
 "use client";
 import NavigationMain from "@/components/NavigationMain";
-import { AddData } from "@/components/menu/AddData";
-import { AssignCourseObjective } from "@/components/menu/AssignCourseObjective";
-import CreateTable from "@/components/menu/CreateTable";
-import { SectionEvaluation } from "@/components/menu/SectionEvaluation";
+import { AddData } from "@/components/menu/DataEntry/AddData";
+import { AssignCourseObjective } from "@/components/menu/DataEntry/AssignCourseObjective";
+import CreateTable from "@/components/menu/DataEntry/CreateTable";
+import { SectionEvaluation } from "@/components/menu/DataEntry/SectionEvaluation";
+import { ByDepartment } from "@/components/menu/DataQuery/ByDepartment";
 import {
   Card,
   CardContent,
@@ -66,7 +67,8 @@ export default function Home() {
     switch (activeTab) {
       case 0:
         return "Empty, select a category";
-
+      case 1:
+        return <ByDepartment />;
       default:
         return null;
     }
@@ -145,7 +147,7 @@ export default function Home() {
                 <CardTitle>Action Viewer</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
+                <CardDescription className="max-h-[60vh]">
                   {(activeTab == 3 || activeTab == 4) && isDataEntryOpen && (
                     <p className="text-xs pb-5">Populates the form fields</p>
                   )}
@@ -153,9 +155,9 @@ export default function Home() {
                     <p className="text-xs pb-0">Select List of Actions below</p>
                   )}
 
-                  {isDataQueryingOpen && activeTab != 0 && (
-                    <p className="text-xs pb-0">Select List of Actions below</p>
-                  )}
+                  {/* {isDataQueryingOpen && activeTab != 0 && (
+                    // <p className="text-xs pb-0">Select List of Actions below</p>
+                  )} */}
                   {isDataEntryOpen && renderContentDataEntry()}
                   {isDataQueryingOpen && renderContentDataQuerying()}
                 </CardDescription>
