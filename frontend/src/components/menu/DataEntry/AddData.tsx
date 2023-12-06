@@ -12,6 +12,7 @@ import AddObjective from "@/components/menu/DataEntry/AddDataComponents/AddObjec
 import AddSubObjective from "@/components/menu/DataEntry/AddDataComponents/AddSubObjective";
 
 export const AddData = () => {
+  const { toast } = useToast();
   // Add Department
   const [departmentData, setDepartmentData] = useState({
     departmentName: "",
@@ -62,14 +63,62 @@ export const AddData = () => {
     objCode: "",
   });
 
+  async function sendQuery(url: string, successMessage: string) {
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Assuming the server returns a JSON response
+      const responseData = await response.json();
+
+      // Show a success toast
+      if (responseData.statusCode == 200)
+        toast({
+          title: successMessage,
+          description: `${responseData.message}`,
+        });
+      else
+        toast({
+          variant: "destructive",
+          title: `Error!`,
+          description: `${responseData.message}`,
+        });
+
+      return responseData;
+    } catch (error) {
+      console.error(`Error`, error);
+
+      // Show an error toast
+      toast({
+        variant: "destructive",
+        title: `Error! ${error}`,
+      });
+
+      throw error; // Re-throw the error for further handling if needed
+    }
+  }
+
   return (
     <div className="min-h-[30vh] text-lg items-center text-start space-y-5">
       <div className="flex-col space-y-5">
         <PopupComponent
-          onConfirm={() => {
+          onConfirm={async () => {
             console.log(
               `Creating department with: ${departmentData.departmentCode} ${departmentData.departmentName}`
             );
+            const url = `/api/add_department/?dept_name=${encodeURIComponent(
+              departmentData.departmentName
+            )}&dept_code=${encodeURIComponent(departmentData.departmentCode)}`;
+            const successMessage = "Department created";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Department"
           description={
@@ -80,10 +129,21 @@ export const AddData = () => {
           }
         />
         <PopupComponent
-          onConfirm={() => {
+          onConfirm={async () => {
             console.log(
               `Creating faculty with: ${JSON.stringify(facultyData)}`
             );
+            const url = `/api/add_faculty/?faculty_id=${encodeURIComponent(
+              facultyData.facultyId
+            )}&name=${encodeURIComponent(
+              facultyData.facultyName
+            )}&email=${encodeURIComponent(
+              facultyData.email
+            )}&dept_id=${encodeURIComponent(
+              facultyData.departmentId
+            )}&position=${encodeURIComponent(facultyData.position)}`;
+            const successMessage = "Faculty added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Faculty"
           description={
@@ -98,6 +158,17 @@ export const AddData = () => {
             console.log(
               `Creating program with: ${programData.prog_name}, ${programData.dept_id}, ${programData.lead}, ${programData.leadID}, ${programData.leadEmail}`
             );
+            const url = `/api/add_program/?prog_name=${encodeURIComponent(
+              programData.prog_name
+            )}&dept_id=${encodeURIComponent(
+              programData.dept_id
+            )}&lead=${encodeURIComponent(
+              programData.lead
+            )}&lead_id=${encodeURIComponent(
+              programData.leadID
+            )}&lead_email=${encodeURIComponent(programData.leadEmail)}`;
+            const successMessage = "Program added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Program"
           description={
@@ -112,6 +183,16 @@ export const AddData = () => {
             console.log(
               `Creating course with: ${courseData.courseID}, ${courseData.title}, ${courseData.description}, ${courseData.dept_id}`
             );
+            // /add_course/?course_id=CS1342&title=C%2B%2B&description=C%2B%2B%20learning&dept_id=COMP
+            const url = `/api/add_course/?course_id=${encodeURIComponent(
+              courseData.courseID
+            )}&title=${encodeURIComponent(
+              courseData.title
+            )}&description=${encodeURIComponent(
+              courseData.description
+            )}&dept_id=${encodeURIComponent(courseData.dept_id)}`;
+            const successMessage = "Course added";
+            sendQuery(url, successMessage);
           }}
           buttonTitle="Add Course"
           description={

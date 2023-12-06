@@ -201,10 +201,8 @@ async def add_faculty(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
-# Add Program
 
-
-@app.post("/add_program/")
+@app.get("/add_program/")
 async def add_program(
     prog_name: str,
     dept_id: str,
@@ -213,7 +211,9 @@ async def add_program(
     lead_email: str
 ):
     try:
-        if help_functions.validate_program_input(prog_name, dept_id, lead, lead_id, lead_email):
+        success, message = help_functions.validate_program_input(
+            prog_name, dept_id, lead, lead_id, lead_email)
+        if success:
             prog_name = prog_name.upper()
             prog_dept = dept_id.upper()
             lead = lead.title()
@@ -223,19 +223,20 @@ async def add_program(
                 "INSERT INTO Program (ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) "
                 "VALUES (%s, %s, %s, %s, %s)"
             )
-            help_functions.execute_query(
-                connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email))
-
-            return {"message": "Program added successfully"}
+            if help_functions.execute_query(
+                    connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email)):
+                return {"message": "Program added successfully", "statusCode": 200}
+            else:
+                return {"message": "Something wrong happened", "statusCode": 500}
         else:
-            return {"message": "Program not added: Invalid input"}
+            return {"message": f"Program not added: {message}", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Add Course
 
 
-@app.post("/add_course/")
+@app.get("/add_course/")
 async def add_course(
     course_id: str,
     title: str,
@@ -243,7 +244,9 @@ async def add_course(
     dept_id: str
 ):
     try:
-        if help_functions.validate_course_input(course_id, title, description, dept_id):
+        message, success = help_functions.validate_course_input(
+            course_id, title, description, dept_id)
+        if success:
             course_id = course_id.upper()
             title = help_functions.replace_ampersand(title)
             title = help_functions.title_except(title)
@@ -254,14 +257,16 @@ async def add_course(
                 "INSERT INTO Course (CourseID, Title, Description, DeptID) "
                 "VALUES (%s, %s, %s, %s)"
             )
-            help_functions.execute_query(
-                connection, add_course_query, (course_id, title, description, dept_id))
 
-            return {"message": "Course added successfully"}
+            if help_functions.execute_query(
+                    connection, add_course_query, (course_id, title, description, dept_id)):
+                return {"message": "Course added successfully", "statusCode": 200}
+            else:
+                return {"message": "Cannot add course!", "statusCode": 500}
         else:
-            return {"message": "Course not added: Invalid input"}
+            return {"message": "Course not added: Invalid input", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Add a section
 

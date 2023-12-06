@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 
 export const ByDepartment = () => {
   // const [departmentData, setDepartmentData]
@@ -49,6 +50,10 @@ export const ByDepartment = () => {
           setPrograms(data.programs);
         } else if (activeQuery == "Faculty") {
           setFaculty(data.faculty);
+        }
+
+        if (data.programs.length == 0) {
+          toast({ title: "Fetch Result", description: "Fetched empty array" });
         }
       } catch (error) {
         console.error("Error fetching data:", error);

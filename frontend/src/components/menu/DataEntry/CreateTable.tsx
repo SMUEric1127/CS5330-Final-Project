@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { PopupComponent } from "@/components/core/PopupComponent";
 
 const CreateTable = () => {
+  const { toast } = useToast();
   const [tableName, setTableName] = useState<string | undefined>(undefined);
 
   const ClearTable = () => {
@@ -21,12 +22,61 @@ const CreateTable = () => {
       />
     );
   };
+
+  const manipulateTable = async (type: string) => {
+    try {
+      const url =
+        type == "create" ? "/api/create_tables/" : "/api/clear_all_tables/";
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Something wrong happened",
+          description: "Something wrong happened, please try again",
+        });
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Action Success",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const clearSpecificTable = async (tableName: string) => {
+    try {
+      const url = "/api/clear_specific_table/" + tableName;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Something wrong happened",
+          description: "Something wrong happened, please try again",
+        });
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Action Success",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
   return (
     <div className="min-h-[30vh] text-lg items-center text-start space-y-5">
       <div className="flex-col space-y-5">
         <PopupComponent
-          onConfirm={() => {
-            console.log("Crate Tables");
+          onConfirm={async () => {
+            await manipulateTable("create");
           }}
           buttonTitle="Create Tables"
           title="Are you sure?"
@@ -35,15 +85,21 @@ const CreateTable = () => {
         <PopupComponent
           onConfirm={() => {
             console.log(`Clear a Table with name ${tableName}`);
-            // This is where fetch goes
+            if (tableName) clearSpecificTable(tableName);
+            else
+              toast({
+                variant: "destructive",
+                title: "Enter table name",
+                description: "Please enter the table name you want to clear.",
+              });
           }}
-          buttonTitle="Clear a Table"
+          buttonTitle="Clear and drop a Table"
           title="Enter the table you want to clear"
           description={<ClearTable />}
         />
         <PopupComponent
-          onConfirm={() => {
-            console.log("Clear All Tables");
+          onConfirm={async () => {
+            await manipulateTable("clear");
           }}
           buttonTitle="Clear All Tables"
           title="Are you absolutely sure?"
