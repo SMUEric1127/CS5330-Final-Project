@@ -331,7 +331,7 @@ async def add_objective(
                     "Objective not added: please enter the next valid objective code, or let the database generate one"
                 }
                 checks_passed = False
-            elif checks_passed and not obj_code:
+            elif checks_passed and obj_code == '':
                 obj_code = next_obj_code
 
             if checks_passed:
@@ -443,7 +443,7 @@ async def add_course_objective(
             return {"message": "Cannot add course objective!", "statusCode": 500}
 
         # If no sub_obj_code was provided and auto_populate is 'y', add all associated sub-objectives
-        if not sub_obj_code and auto_populate == 'y':
+        if not sub_obj_code and auto_populate == 'Yes':
             # Check if the objective has sub-objectives
             sub_objectives = help_functions.select_query(
                 connection, sql_cmds.get_sub_objectives, (obj_code,))
@@ -692,8 +692,8 @@ def list_evaluation_results_by_academic_year(start_year):
     JOIN Section S ON E.SecID = S.SecID
     JOIN Course C on C.CourseID = S.CourseID
     WHERE
-        (S.Semester = 'Summer' AND S.Year = %s) OR
-        (S.Semester IN ('Fall', 'Spring') AND S.Year = %s)
+        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+        (s.Semester = 'Spring' AND s.Year = %s)
     ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
     """
     params = (start_year, end_year)
@@ -715,8 +715,8 @@ def aggregate_evaluations_by_academic_year(start_year):
     LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
     LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
     WHERE
-        (s.Semester = 'Summer' AND s.Year = %s) OR
-        (s.Semester IN ('Fall', 'Spring') AND s.Year = %s)
+        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+        (s.Semester = 'Spring' AND s.Year = %s)
     GROUP BY o.ObjCode, so.SubObjCode
     ORDER BY o.ObjCode, so.SubObjCode;
     """
@@ -784,6 +784,8 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
 async def list_aggregation_results_endpoint(query: AcademicYearQuery):
     try:
         result = aggregate_evaluations_by_academic_year(query.start_year)
+        if not result:
+            result = []
         return {"aggregated_results": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
