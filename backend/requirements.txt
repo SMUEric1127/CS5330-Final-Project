@@ -3,3 +3,4 @@ python-dotenv
 tabulate
 pandas
 mysql-connector-python
+uvicorn

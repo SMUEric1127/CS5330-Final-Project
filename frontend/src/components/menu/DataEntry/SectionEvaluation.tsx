@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { PopupComponent } from "@/components/core/PopupComponent";
+import { useToast } from "@/components/ui/use-toast";
 
 export const SectionEvaluation = () => {
+  const { toast } = useToast();
   const [evaluateObjectiveData, setEvaluateObjectiveData] = useState({
     courseObjID: "",
     secID: "",
@@ -19,6 +21,52 @@ export const SectionEvaluation = () => {
       [name]: value,
     }));
   };
+
+  async function sendQuery(url: string, dataBody: any, successMessage: string) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dataBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Assuming the server returns a JSON response
+      const responseData = await response.json();
+
+      // Show a success toast
+      if (responseData.statusCode === 200) {
+        toast({
+          title: successMessage,
+          description: `${responseData.message}`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error!",
+          description: `${responseData.message}`,
+        });
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error("Error", error);
+
+      // Show an error toast
+      toast({
+        variant: "destructive",
+        title: `Error! ${error}`,
+      });
+
+      throw error; // Re-throw the error for further handling if needed
+    }
+  }
 
   return (
     <div className="flex flex-col space-y-5">
@@ -48,7 +96,7 @@ export const SectionEvaluation = () => {
       <div className="flex flex-row space-x-5">
         <Input
           name="year"
-          type="text"
+          type="number"
           placeholder="Year"
           onChange={handleChange}
           value={evaluateObjectiveData.year || ""}
@@ -74,6 +122,9 @@ export const SectionEvaluation = () => {
             console.log(
               `Evaluating objective with: ${evaluateObjectiveData.courseObjID}, ${evaluateObjectiveData.secID}, ${evaluateObjectiveData.semester}, ${evaluateObjectiveData.year}, ${evaluateObjectiveData.evalMethod}, ${evaluateObjectiveData.studentsPassed}`
             );
+            const url = `/api/add_objective_evaluation`;
+            const successMessage = "Assign success";
+            sendQuery(url, evaluateObjectiveData, successMessage);
           }}
           title="Are you sure?"
           buttonTitle="Submit"

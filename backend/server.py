@@ -306,21 +306,23 @@ async def add_section(
 
 @app.get("/add_objective/")
 async def add_objective(
-    obj_code: str,
     description: str,
     prog: str,
-    dept_id: str
+    dept_id: str,
+    obj_code: str | None = None,
 ):
     try:
-        if help_functions.validate_objective_input(obj_code, description, prog, dept_id):
-            obj_code = obj_code.upper()
+        message, success = help_functions.validate_objective_input(
+            obj_code, description, prog, dept_id)
+        if success:
+            # obj_code = obj_code.upper()
             prog = prog.upper()
 
             checks_passed = True
             result = help_functions.select_query(
                 connection, sql_cmds.count_obj_query, (prog, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{prog}{dept_id}{count + 1}"
+            next_obj_code = f"{prog[:3]}{dept_id}{count + 1}"
 
             if obj_code and obj_code != next_obj_code:
                 return {
@@ -337,25 +339,30 @@ async def add_objective(
                     "INSERT INTO Objectives (ObjCode, Description, ProgName, DeptID) "
                     "VALUES (%s, %s, %s, %s)"
                 )
-                help_functions.execute_query(
-                    connection, add_objective_query, (obj_code, description, prog, dept_id))
 
-                return {"message": "Objective added successfully"}
+                results = help_functions.execute_query(
+                    connection, add_objective_query, (obj_code, description, prog, dept_id))
+                if results:
+                    return {"message": "Objective added successfully", "statusCode": 200}
+                else:
+                    return {"message": "Cannot add section!", "statusCode": 500}
         else:
-            return {"message": "Objective not added: Invalid input"}
+            return {"message": "Objective not added: Invalid input", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Add Sub Objective
 
 
-@app.post("/add_sub_objective/")
+@app.get("/add_sub_objective/")
 async def add_sub_objective(
     description: str,
     obj_code: str
 ):
     try:
-        if help_functions.validate_sub_objective_input(description, obj_code):
+        message, success = help_functions.validate_sub_objective_input(
+            description, obj_code)
+        if success:
             obj_code = obj_code.upper()
 
             obj_exists = help_functions.select_query(
@@ -375,24 +382,26 @@ async def add_sub_objective(
                 "INSERT INTO SubObjectives (SubObjCode, Description, ObjCode) "
                 "VALUES (%s, %s, %s)"
             )
-            help_functions.execute_query(
-                connection, add_sub_objective_query, (sub_obj_code, description, obj_code))
 
-            return {"message": "Sub-objective added successfully"}
+            if help_functions.execute_query(
+                    connection, add_sub_objective_query, (sub_obj_code, description, obj_code)):
+                return {"message": "Sub-objective added successfully", "statusCode": 200}
+            else:
+                return {"message": "Cannot add sub-objective!", "statusCode": 500}
         else:
-            return {"message": "Sub-objective not added: Invalid input"}
+            return {"message": "Sub-objective not added: Invalid input", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # add new course objective
 
 
-@app.post("/add_course_objective/")
+@app.get("/add_course_objective/")
 async def add_course_objective(
     course_id: str,
     obj_code: str,
-    sub_obj_code: str = None,
-    auto_populate: str = None
+    sub_obj_code: str | None = None,
+    auto_populate: str | None = None
 ):
     try:
         course_id = course_id.upper()
@@ -400,33 +409,38 @@ async def add_course_objective(
         sub_obj_code = sub_obj_code.upper() if sub_obj_code else None
         auto_populate = auto_populate.lower() if auto_populate else None
 
-        checks_passed = True
+        message, success = help_functions.validate_course_obj_input(
+            course_id, obj_code, sub_obj_code, auto_populate)
+
+        if not success:
+            return {"message": f"An error occurred: {str(message)}", "statusCode": 500}
 
         course_exists = help_functions.select_query(
             connection, sql_cmds.check_course_exists, (course_id,))
         if not course_exists or course_exists[0]['course_count'] == 0:
-            return {"message": f"Course number {course_id} does not exist. Course objective not added: Invalid input"}
+            return {"message": f"Course number {course_id} does not exist. Course objective not added: Invalid input", "statusCode": 500}
 
         obj_exists = help_functions.select_query(
             connection, sql_cmds.check_obj_exists, (obj_code,))
         if not obj_exists or obj_exists[0]['obj_count'] == 0:
             return {"message": f"Learning objective code {obj_code} does not exist. "
-                               "Course objective not added: Invalid input"}
+                               "Course objective not added: Invalid input", "statusCode": 500}
 
         if sub_obj_code:
             sub_obj_code_exists = help_functions.select_query(
                 connection, sql_cmds.check_sub_obj_exists, (sub_obj_code,))
             if not sub_obj_code_exists or sub_obj_code_exists[0]['sub_obj_count'] == 0:
                 return {"message": f"Sub-objective code {sub_obj_code} does not exist. "
-                                   "Course objective not added: Invalid input"}
+                                   "Course objective not added: Invalid input", "statusCode": 500}
 
         course_obj_id = f"{course_id}.{obj_code}.{sub_obj_code}" if sub_obj_code else f"{course_id}.{obj_code}"
         add_course_obj_query = (
             "INSERT INTO CourseObjectives (CourseObjID, CourseID, ObjCode, SubObjCode) "
             "VALUES (%s, %s, %s, %s)"
         )
-        help_functions.execute_query(
-            connection, add_course_obj_query, (course_obj_id, course_id, obj_code, sub_obj_code))
+        if not help_functions.execute_query(
+                connection, add_course_obj_query, (course_obj_id, course_id, obj_code, sub_obj_code)):
+            return {"message": "Cannot add course objective!", "statusCode": 500}
 
         # If no sub_obj_code was provided and auto_populate is 'y', add all associated sub-objectives
         if not sub_obj_code and auto_populate == 'y':
@@ -438,13 +452,41 @@ async def add_course_objective(
                     sub_obj_code = sub_obj['SubObjCode']
                     course_obj_id = f"{course_id}.{sub_obj_code}"
                     # Add each sub-objective
-                    help_functions.execute_query(connection, add_course_obj_query,
-                                                 (course_obj_id, course_id, obj_code, sub_obj_code))
-                return {"message": "All associated sub-objectives added successfully."}
+                    if not help_functions.execute_query(connection, add_course_obj_query,
+                                                        (course_obj_id, course_id, obj_code, sub_obj_code)):
+                        return {"message": "Error during add sub-objective!", "statusCode": 500}
+                return {"message": "All associated sub-objectives added successfully.", "statusCode": 200}
 
-        return {"message": "Course objective added successfully"}
+        return {"message": "Course objective added successfully", "statusCode": 200}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
+
+
+class ObjectiveEvalInput(BaseModel):
+    courseObjID: str
+    secID: str
+    semester: str
+    year: str
+    evalMethod: str
+    studentsPassed: int
+
+
+@app.post("/add_objective_evaluation")
+async def add_objective_evaluation(input_data: ObjectiveEvalInput):
+    input_data.secID = input_data.secID.zfill(3)
+    input_data.courseObjID = input_data.courseObjID.upper()
+    input_data.semester = input_data.semester.title()
+    input_data.evalMethod = input_data.evalMethod.title()
+
+    message, success = help_functions.validate_obj_eval_input(input_data.courseObjID, input_data.secID, input_data.semester,
+                                                              input_data.year, input_data.evalMethod, input_data.studentsPassed)
+
+    if not success:
+        return {"message": f"An error occurred: {str(message)}", "statusCode": 500}
+
+    return {"message": "Objective evaluation need implementation (Convert logic to api)", "statusCode": 200}
+    # return {"message": "Objective evaluation added successfully"}
+
 
 # delete a record from the database with multiple conditions
 
@@ -575,7 +617,7 @@ def list_courses_by_program(program_name):
 
 def list_objectives_by_program(program_name):
     query = """
-    SELECT O.Description
+    SELECT O.ObjCode, O.Description
     FROM Objectives O
     JOIN Program P ON P.ProgName = O.ProgName
     WHERE O.ProgName = %s;
@@ -711,6 +753,14 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/list_aggregate_results_by_academic_year/")
+async def list_aggregation_results_endpoint(query: AcademicYearQuery):
+    try:
+        result = aggregate_evaluations_by_academic_year(query.start_year)
+        return {"aggregated_results": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

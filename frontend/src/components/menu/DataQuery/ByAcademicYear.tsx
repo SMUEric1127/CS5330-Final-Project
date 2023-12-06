@@ -15,11 +15,18 @@ import { Button } from "@/components/ui/button";
 export const ByAcademicYear = () => {
   const [startYear, setStartYear] = useState<undefined | number>(undefined);
   const [evaluationResults, setEvaluationResults] = useState([]);
+  const [aggregatedResults, setAggregatedResults] = useState([]);
+
+  // Evaluation Detail & Aggregated Percentage
+  const [activeQuery, setActiveQuery] = useState("Evaluation");
 
   const handleSearch = async () => {
     if (startYear !== undefined) {
       try {
-        const url = "/api/list_evaluation_results_by_academic_year/";
+        const url =
+          activeQuery == "Evaluation"
+            ? "/api/list_evaluation_results_by_academic_year/"
+            : "/api/list_aggregate_results_by_academic_year/";
 
         const response = await fetch(url, {
           method: "POST",
@@ -38,7 +45,11 @@ export const ByAcademicYear = () => {
 
         const data = await response.json();
 
-        setEvaluationResults(data.evaluation_results);
+        if (activeQuery == "Evaluation") {
+          setEvaluationResults(data.evaluation_results);
+        } else if (activeQuery == "Aggregated") {
+          setAggregatedResults(data.aggregated_results);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -56,35 +67,89 @@ export const ByAcademicYear = () => {
         />
         <Button onClick={handleSearch}>Search</Button>
       </div>
-      <Table>
-        <TableCaption>
-          Evaluation results for the academic year starting from {startYear}.
-        </TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[20px]">Index</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Subcode</TableHead>
-            <TableHead>Semester</TableHead>
-            <TableHead>Year</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Result</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {evaluationResults.map((data, index) => (
-            <TableRow key={index}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{data[0]}</TableCell>
-              <TableCell>{data[1]}</TableCell>
-              <TableCell>{data[2]}</TableCell>
-              <TableCell>{data[3]}</TableCell>
-              <TableCell>{data[4]}</TableCell>
-              <TableCell>{data[5]}</TableCell>
+      <div className="flex space-x-4">
+        <Button
+          onClick={() => setActiveQuery("Evaluation")}
+          className={`px-4 py-2 hover:text-white ${
+            activeQuery === "Evaluation"
+              ? "bg-primary text-white"
+              : "bg-gray-200 text-gray-700"
+          } rounded`}
+        >
+          Evaluation Detail
+        </Button>
+        <Button
+          onClick={() => setActiveQuery("Aggregated")}
+          className={`px-4 py-2 hover:text-white  ${
+            activeQuery === "Aggregated"
+              ? "bg-primary text-white"
+              : "bg-gray-200 text-gray-700"
+          } rounded`}
+        >
+          Aggregated Student Percentage
+        </Button>
+      </div>
+      {activeQuery == "Evaluation" && (
+        <Table>
+          <TableCaption>
+            Evaluation results for the academic year starting from {startYear}.
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[20px]">Index</TableHead>
+              <TableHead>Objective Code</TableHead>
+              <TableHead>Subcode</TableHead>
+              <TableHead>Semester</TableHead>
+              <TableHead>Year</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Result</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {evaluationResults.map((data, index) => (
+              <TableRow key={index}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{data[0]}</TableCell>
+                <TableCell>{data[1]}</TableCell>
+                <TableCell>{data[2]}</TableCell>
+                <TableCell>{data[3]}</TableCell>
+                <TableCell>{data[4]}</TableCell>
+                <TableCell>{data[5]}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {activeQuery == "Aggregated" && (
+        <Table>
+          <TableCaption>
+            Aggregated student percentage for the academic year starting from{" "}
+            {startYear}.
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[20px]">Index</TableHead>
+              <TableHead>Objective Code</TableHead>
+              <TableHead>SubObjective Code</TableHead>
+              <TableHead>Students Passed</TableHead>
+              <TableHead>Total Students</TableHead>
+              <TableHead>Percentage Passed</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {aggregatedResults.map((data, index) => (
+              <TableRow key={index}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{data[0]}</TableCell>
+                <TableCell>{data[1]}</TableCell>
+                <TableCell>{data[2]}</TableCell>
+                <TableCell>{data[3]}</TableCell>
+                <TableCell>{data[4]}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 };
