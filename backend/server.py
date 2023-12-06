@@ -84,10 +84,11 @@ async def create_tables():
             for table in tables_to_create:
                 if help_functions.execute_query(connection, required_tables[table]):
                     statusCode = 200
-                    response_message = f"Table created successfully"
+                    response_message = f"Created successfully {len(tables_to_create)} table(s)."
                 else:
                     statusCode = 500
                     response_message = f"Error occurred while creating table"
+                    break
         else:
             statusCode = 201
             response_message = "All required tables already exist."
@@ -98,8 +99,7 @@ async def create_tables():
         return {"message": f"An error occurred: {str(e)}", statusCode: statusCode}
 
 
-# Clear a Certain Table
-@app.post("/Clear a certain Table/{table_name}")
+@app.get("/clear_specific_table/{table_name}")
 async def delete_table(table_name: str):
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
@@ -146,10 +146,12 @@ async def clear_all_tables():
 # Add Department
 
 
-@app.post("/add_department/")
+@app.get("/add_department/")
 async def add_department(dept_name: str, dept_code: str):
     try:
-        if help_functions.validate_dept_input(dept_name, dept_code):
+        success, message = help_functions.validate_dept_input(
+            dept_name, dept_code)
+        if success:
             dept_name = help_functions.replace_ampersand(dept_name)
             dept_name = help_functions.title_except(dept_name)
             dept_code = dept_code.upper()
@@ -158,16 +160,16 @@ async def add_department(dept_name: str, dept_code: str):
             help_functions.execute_query(
                 connection, add_department_query, (dept_name, dept_code))
 
-            return {"message": "Department added successfully"}
+            return {"message": "Department added successfully", "statusCode": 200}
         else:
-            return {"message": "Department not added: Invalid input"}
+            return {"message": f"Department not added: {message}", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Add Faculty Member
 
 
-@app.post("/add_faculty/")
+@app.get("/add_faculty/")
 async def add_faculty(
     faculty_id: str,
     name: str,
@@ -176,7 +178,9 @@ async def add_faculty(
     position: str
 ):
     try:
-        if help_functions.validate_faculty_input(faculty_id, name, email, dept_id, position):
+        message, success = help_functions.validate_faculty_input(
+            faculty_id, name, email, dept_id, position)
+        if success:
             name = name.title()
             email = email.lower()
             dept_id = dept_id.upper()
@@ -186,14 +190,16 @@ async def add_faculty(
                 "INSERT INTO Faculty (FacultyID, Name, Email, DeptID, Position) "
                 "VALUES (%s, %s, %s, %s, %s)"
             )
-            help_functions.execute_query(
-                connection, add_faculty_query, (faculty_id, name, email, dept_id, position))
 
-            return {"message": "Faculty added successfully"}
+            if help_functions.execute_query(
+                    connection, add_faculty_query, (faculty_id, name, email, dept_id, position)):
+                return {"message": "Faculty added successfully", "statusCode": 200}
+            else:
+                return {"message": f"Faculty not added, something wrong happened!", "statusCode": 500}
         else:
-            return {"message": "Faculty not added: Invalid input"}
+            return {"message": f"Faculty not added {message}", "statusCode": 500}
     except Exception as e:
-        return {"message": f"An error occurred: {str(e)}"}
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Add Program
 
