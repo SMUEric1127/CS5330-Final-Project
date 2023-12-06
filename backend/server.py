@@ -395,7 +395,54 @@ async def add_course_objective(
         return {"message": "Course objective added successfully"}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}"}
-    
+        
+# Add a new objective evaluation 
+app.post("/add_objective_evaluation/")
+async def add_objective_evaluation(
+    courseObjID: str,
+    secID: str,
+    semester: str,
+    year: int,
+    evalMethod: str,
+    studentsPassed: int
+):
+    try:
+        secID = secID.zfill(3)
+        if help_functions.validate_obj_eval_input(courseObjID, secID, semester, year, evalMethod, studentsPassed):
+            courseObjID = courseObjID.upper()
+            courseID = courseObjID.split('.')[0]
+            semester = semester.title()
+            evalMethod = evalMethod.title()
+            checks_passed = True
+
+            course_obj_id_exists = help_functions.select_query(
+                connection, sql_cmds.check_course_obj_id_exists, (courseObjID,))
+            if not course_obj_id_exists or course_obj_id_exists[0]['course_obj_count'] == 0:
+                return {"message": f"Course objective ID {courseObjID} does not exist. Objective evaluation not added."}
+
+            section_exists = help_functions.select_query(
+                connection, sql_cmds.check_section_exists, (courseID, secID, semester, year))
+            if not section_exists or section_exists[0]['section_count'] == 0:
+                return {"message": f"Section ID {secID} does not exist. Objective evaluation not added."}
+
+            student_count = help_functions.select_query(
+                connection, sql_cmds.get_student_count, (courseID, secID, semester, year))
+            if studentsPassed > student_count[0]['EnrollCount']:
+                return {"message": f"Students passed ({studentsPassed}) cannot be greater than enrollment count ({student_count[0]['EnrollCount']}). Objective evaluation not added."}
+
+            add_obj_eval = ("INSERT INTO ObjectiveEval ("
+                            "CourseObjID, SecID, Semester, Year, EvalMethod, StudentsPassed) VALUES ("
+                            "%s, %s, %s, %s, %s, %s)")
+            help_functions.execute_query(
+                connection, add_obj_eval, (courseObjID, secID, semester, year, evalMethod, studentsPassed))
+
+            return {"message": "Objective evaluation added successfully."}
+        else:
+            return {"message": "Objective evaluation not added: Invalid input."}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}"}
+
 # delete a record from the database with multiple conditions
 @app.post("/delete_records/")
 async def delete_records(
