@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from DatabaseProject import help_functions, sql_cmds
 import re
 import pandas as pd
-from database_source.query import exampleQuery, exampleQueryParam
 import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,7 +49,7 @@ class AcademicYearQuery(BaseModel):
 @app.get("/")
 async def root():
     # Get something simple without any params
-    return {"statusCode": 200, "result": exampleQuery()}
+    return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
 
 # Create Tables Function
 

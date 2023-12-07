@@ -31,6 +31,28 @@ services:
     networks:
       - cs5330_network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env
+    ports:
+      - 3000:3000
+    networks:
+      - cs5330_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .back-env
+    ports:
+      - 8000:8000
+    networks:
+      - cs5330_network
+
 networks:
   cs5330_network:
     driver: bridge
