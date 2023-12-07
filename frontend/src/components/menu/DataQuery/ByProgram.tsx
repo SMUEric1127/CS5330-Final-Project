@@ -91,9 +91,11 @@ export const ByProgram = () => {
       </div>
       {activeQuery === "Courses" && (
         <Table>
-          <TableCaption>
-            A list of courses for the program {programName}.
-          </TableCaption>
+          {programName && (
+            <TableCaption>
+              A list of courses for the program {programName}.
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
@@ -116,9 +118,11 @@ export const ByProgram = () => {
       )}
       {activeQuery === "Objectives" && (
         <Table>
-          <TableCaption>
-            A list of objectives for the program {programName}.
-          </TableCaption>
+          {programName && (
+            <TableCaption>
+              A list of objectives for the program {programName}.
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>

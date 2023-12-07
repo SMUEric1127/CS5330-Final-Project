@@ -98,9 +98,11 @@ export const ByDepartment = () => {
       </div>
       {activeQuery == "Program" && (
         <Table>
-          <TableCaption>
-            A list of your programs from department {departmentID}.
-          </TableCaption>
+          {departmentID && (
+            <TableCaption>
+              A list of programs from department {departmentID}.
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
@@ -121,9 +123,11 @@ export const ByDepartment = () => {
       )}
       {activeQuery == "Faculty" && (
         <Table>
-          <TableCaption>
-            A list of faculty members in the Computer Science Department.
-          </TableCaption>
+          {departmentID && (
+            <TableCaption>
+              A list of faculty members in the Computer Science Department.
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>

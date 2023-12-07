@@ -51,9 +51,9 @@ DROP TABLE IF EXISTS `courseobjectives`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `courseobjectives` (
-  `CourseObjID` varchar(20) NOT NULL,
+  `CourseObjID` varchar(64) NOT NULL,
   `CourseID` varchar(8) NOT NULL,
-  `ObjCode` varchar(9) NOT NULL,
+  `ObjCode` varchar(24) NOT NULL,
   `SubObjCode` varchar(12) DEFAULT NULL,
   PRIMARY KEY (`CourseObjID`),
   KEY `CourseID` (`CourseID`),
@@ -138,7 +138,7 @@ DROP TABLE IF EXISTS `objectiveeval`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `objectiveeval` (
-  `CourseObjID` varchar(20) NOT NULL,
+  `CourseObjID` varchar(64) NOT NULL,
   `SecID` char(3) NOT NULL,
   `Semester` enum('Fall','Spring','Summer') NOT NULL,
   `Year` year NOT NULL,
@@ -167,7 +167,7 @@ DROP TABLE IF EXISTS `objectives`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `objectives` (
-  `ObjCode` varchar(9) NOT NULL,
+  `ObjCode` varchar(24) NOT NULL,
   `Description` text NOT NULL,
   `ProgName` varchar(50) NOT NULL,
   `DeptID` varchar(4) NOT NULL,
@@ -263,7 +263,7 @@ DROP TABLE IF EXISTS `subobjectives`;
 CREATE TABLE `subobjectives` (
   `SubObjCode` varchar(12) NOT NULL,
   `Description` text NOT NULL,
-  `ObjCode` varchar(9) NOT NULL,
+  `ObjCode` varchar(24) NOT NULL,
   PRIMARY KEY (`SubObjCode`),
   KEY `ObjCode` (`ObjCode`),
   CONSTRAINT `subobjectives_ibfk_1` FOREIGN KEY (`ObjCode`) REFERENCES `objectives` (`ObjCode`)

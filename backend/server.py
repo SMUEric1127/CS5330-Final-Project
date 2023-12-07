@@ -322,7 +322,7 @@ async def add_objective(
             result = help_functions.select_query(
                 connection, sql_cmds.count_obj_query, (prog, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{prog[:3]}{dept_id}{count + 1}"
+            next_obj_code = f"{prog}{dept_id}{count + 1}"
 
             if obj_code and obj_code != next_obj_code:
                 return {
@@ -331,7 +331,7 @@ async def add_objective(
                     "Objective not added: please enter the next valid objective code, or let the database generate one"
                 }
                 checks_passed = False
-            elif checks_passed and not obj_code:
+            elif checks_passed and obj_code == '':
                 obj_code = next_obj_code
 
             if checks_passed:
@@ -433,7 +433,7 @@ async def add_course_objective(
                 return {"message": f"Sub-objective code {sub_obj_code} does not exist. "
                                    "Course objective not added: Invalid input", "statusCode": 500}
 
-        course_obj_id = f"{course_id}.{obj_code}.{sub_obj_code}" if sub_obj_code else f"{course_id}.{obj_code}"
+        course_obj_id = f"{course_id}.{sub_obj_code}" if sub_obj_code else f"{course_id}.{obj_code}"
         add_course_obj_query = (
             "INSERT INTO CourseObjectives (CourseObjID, CourseID, ObjCode, SubObjCode) "
             "VALUES (%s, %s, %s, %s)"
@@ -443,7 +443,7 @@ async def add_course_objective(
             return {"message": "Cannot add course objective!", "statusCode": 500}
 
         # If no sub_obj_code was provided and auto_populate is 'y', add all associated sub-objectives
-        if not sub_obj_code and auto_populate == 'y':
+        if not sub_obj_code and auto_populate == 'yes':
             # Check if the objective has sub-objectives
             sub_objectives = help_functions.select_query(
                 connection, sql_cmds.get_sub_objectives, (obj_code,))
@@ -473,22 +473,48 @@ class ObjectiveEvalInput(BaseModel):
 
 @app.post("/add_objective_evaluation")
 async def add_objective_evaluation(input_data: ObjectiveEvalInput):
-    input_data.secID = input_data.secID.zfill(3)
-    input_data.courseObjID = input_data.courseObjID.upper()
-    input_data.semester = input_data.semester.title()
-    input_data.evalMethod = input_data.evalMethod.title()
+    try:
+        secID = input_data.secID.zfill(3)
+        message, success = help_functions.validate_obj_eval_input(
+            input_data.courseObjID, input_data.secID, input_data.semester, input_data.year, input_data.evalMethod, input_data.studentsPassed)
+        if success:
+            courseObjID = input_data.courseObjID.upper()
+            courseID = input_data.courseObjID.split('.')[0]
+            semester = input_data.semester
+            evalMethod = input_data.evalMethod
+            studentsPassed = input_data.studentsPassed
+            year = input_data.year
+            checks_passed = True
 
-    message, success = help_functions.validate_obj_eval_input(input_data.courseObjID, input_data.secID, input_data.semester,
-                                                              input_data.year, input_data.evalMethod, input_data.studentsPassed)
+            course_obj_id_exists = help_functions.select_query(
+                connection, sql_cmds.check_course_obj_id_exists, (courseObjID,))
+            if not course_obj_id_exists or course_obj_id_exists[0]['course_obj_count'] == 0:
+                return {"message": f"Course objective ID {courseObjID} does not exist. Objective evaluation not added.", "statusCode": 500}
 
-    if not success:
-        return {"message": f"An error occurred: {str(message)}", "statusCode": 500}
+            section_exists = help_functions.select_query(
+                connection, sql_cmds.check_section_exists, (courseID, secID, semester, year))
+            if not section_exists or section_exists[0]['section_count'] == 0:
+                return {"message": f"Section ID {secID} does not exist. Objective evaluation not added.", "statusCode": 500}
 
-    return {"message": "Objective evaluation need implementation (Convert logic to api)", "statusCode": 200}
-    # return {"message": "Objective evaluation added successfully"}
+            student_count = help_functions.select_query(
+                connection, sql_cmds.get_student_count, (courseID, secID, semester, year))
+            if studentsPassed > student_count[0]['EnrollCount']:
+                return {"message": f"Students passed ({studentsPassed}) cannot be greater than enrollment count ({student_count[0]['EnrollCount']}). Objective evaluation not added.", "statusCode": 500}
 
+            add_obj_eval = ("INSERT INTO ObjectiveEval ("
+                            "CourseObjID, SecID, Semester, Year, EvalMethod, StudentsPassed) VALUES ("
+                            "%s, %s, %s, %s, %s, %s)")
 
-# delete a record from the database with multiple conditions
+            if help_functions.execute_query(
+                    connection, add_obj_eval, (courseObjID, secID, semester, year, evalMethod, studentsPassed)):
+                return {"message": "Objective evaluation added successfully.", "statusCode": 200}
+            else:
+                return {"message": "Objective evaluation not added!", "statusCode": 500}
+        else:
+            return {"message": "Objective evaluation not added!", "statusCode": 500}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
 @app.post("/delete_records/")
@@ -666,8 +692,8 @@ def list_evaluation_results_by_academic_year(start_year):
     JOIN Section S ON E.SecID = S.SecID
     JOIN Course C on C.CourseID = S.CourseID
     WHERE
-        (S.Semester = 'Summer' AND S.Year = %s) OR
-        (S.Semester IN ('Fall', 'Spring') AND S.Year = %s)
+        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+        (s.Semester = 'Spring' AND s.Year = %s)
     ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
     """
     params = (start_year, end_year)
@@ -689,8 +715,8 @@ def aggregate_evaluations_by_academic_year(start_year):
     LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
     LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
     WHERE
-        (s.Semester = 'Summer' AND s.Year = %s) OR
-        (s.Semester IN ('Fall', 'Spring') AND s.Year = %s)
+        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+        (s.Semester = 'Spring' AND s.Year = %s)
     GROUP BY o.ObjCode, so.SubObjCode
     ORDER BY o.ObjCode, so.SubObjCode;
     """
@@ -758,6 +784,8 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
 async def list_aggregation_results_endpoint(query: AcademicYearQuery):
     try:
         result = aggregate_evaluations_by_academic_year(query.start_year)
+        if not result:
+            result = []
         return {"aggregated_results": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
