@@ -71,9 +71,65 @@ const CreateTable = () => {
       console.error("Error fetching data:", error);
     }
   };
+
+  const clearAllTable = async () => {
+    try {
+      const url = "/api/drop_all_tables/";
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Something wrong happened",
+          description: "Something wrong happened, please try again",
+        });
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Action Success",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const populateTable = async () => {
+    try {
+      const url = "/api/populate_table/";
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Something wrong happened",
+          description: "Something wrong happened, please try again",
+        });
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Action Success",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
   return (
     <div className="min-h-[30vh] text-lg items-center text-start space-y-5">
       <div className="flex-col space-y-5">
+        <PopupComponent
+          onConfirm={async () => {
+            await populateTable();
+          }}
+          buttonTitle="Populate Data"
+          title="Are you absolutely sure?"
+          description="This action will clear your current data, then populate with new data."
+        />
         <PopupComponent
           onConfirm={async () => {
             await manipulateTable("create");
@@ -93,7 +149,7 @@ const CreateTable = () => {
                 description: "Please enter the table name you want to clear.",
               });
           }}
-          buttonTitle="Clear and drop a Table"
+          buttonTitle="Clear and Drop a Table"
           title="Enter the table you want to clear"
           description={<ClearTable />}
         />
@@ -101,7 +157,15 @@ const CreateTable = () => {
           onConfirm={async () => {
             await manipulateTable("clear");
           }}
-          buttonTitle="Clear All Tables"
+          buttonTitle="Clear All Tables (Data only)"
+          title="Are you absolutely sure?"
+          description="This action cannot be undone. This will permanently delete your data"
+        />
+        <PopupComponent
+          onConfirm={async () => {
+            await clearAllTable();
+          }}
+          buttonTitle="Drop All Tables (Data and Tables)"
           title="Are you absolutely sure?"
           description="This action cannot be undone. This will permanently delete your table"
         />

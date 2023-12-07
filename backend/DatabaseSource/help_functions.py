@@ -3,6 +3,7 @@ from mysql.connector import Error
 import re
 import time
 
+
 def connect_database(host_name, user_name, user_password, db_name):
     print(
         f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}")
@@ -19,7 +20,22 @@ def connect_database(host_name, user_name, user_password, db_name):
                 print("MySQL Database connection successful")
                 return connection
         except Error as err:
-            print(f"Error: '{err}'")
+            try:
+                connection = mysql.connector.connect(
+                    host="localhost",
+                    user=user_name,
+                    passwd=user_password,
+                    database=db_name
+                )
+                if connection.is_connected():
+                    print(
+                        "Didn't found mysql_db through docker, tried localhost and success.")
+                    print("MySQL Database connection successful")
+                    return connection
+            except Error as err:
+                pass
+
+            print("Cannot connect to " + host_name)
             print("Retrying in 5 seconds...")
             time.sleep(5)
 
