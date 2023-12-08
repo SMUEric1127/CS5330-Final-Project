@@ -51,45 +51,75 @@ export default function Home() {
   };
 
   const renderContentDataEntry = () => {
-    switch (activeTab) {
-      case 0:
-        return <p className="text-xs pb-5">Empty, select a category</p>;
-      case 1:
-        return <CreateTable />;
-      case 2:
-        return <AddData />;
-      case 3:
-        return <AssignCourseObjective />;
-      case 4:
-        return <SectionEvaluation />;
-      default:
-        return null;
+    const component = () => {
+      switch (activeTab) {
+        case 0:
+          return <div className="text-xs pb-5">Empty, select a category</div>;
+        case 1:
+          return <CreateTable />;
+        case 2:
+          return <AddData />;
+        case 3:
+          return <AssignCourseObjective />;
+        case 4:
+          return <SectionEvaluation />;
+        default:
+          return null;
+      }
     }
+    return (
+      <div>
+        <motion.div
+          key={`${isDataEntryOpen}${activeTab}`}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+        >
+          {component()}
+        </motion.div >
+      </div>
+    );
   };
 
   const renderContentDataQuerying = () => {
-    switch (activeTab) {
-      case 0:
-        return <p className="text-xs pb-5">Empty, select a category</p>;
-      case 1:
-        return <ByDepartment />;
-      case 2:
-        return <ByProgram />;
-      case 3:
-        return <ByProgramAndSemester />;
-      case 4:
-        return <ByAcademicYear />;
-      default:
-        return null;
+    const component = () => {
+      switch (activeTab) {
+        case 0:
+          return <div className="text-xs pb-5">Empty, select a category</div>;
+        case 1:
+          return <ByDepartment />;
+        case 2:
+          return <ByProgram />;
+        case 3:
+          return <ByProgramAndSemester />;
+        case 4:
+          return <ByAcademicYear />;
+        default:
+          return null;
+      }
     }
+    return (
+      <div>
+        <motion.div
+          key={`${isDataEntryOpen}${activeTab}`}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+        >
+          {component()}
+        </motion.div >
+      </div>
+    );
   };
 
   return (
     <div className="min-h-screen w-screen">
       <NavigationMain />
       <div className="w-max[90vw] px-10 h-full items-center justify-center">
-        <div className="flex flex-row space-x-10 min-h-screen">
-          <div className="flex-2 max-w-[30%] w-fit py-20 max-h-[80vh] overflow-auto">
+        <div className="flex flex-row space-x-10">
+          <div className="flex-2 max-w-[30%] w-fit py-20 max-h-[80vh]">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Menu</CardTitle>
@@ -100,9 +130,8 @@ export default function Home() {
                     Choose either Data Entry or Querying Data
                   </p>
                   <div
-                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${
-                      isDataEntryOpen ? "border-primary" : "border-gray-300"
-                    }`}
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${isDataEntryOpen ? "border-primary" : "border-gray-300"
+                      }`}
                     onClick={() => {
                       setIsDataQueryingOpen(isDataEntryOpen);
                       setIsDataEntryOpen(!isDataEntryOpen);
@@ -124,9 +153,8 @@ export default function Home() {
                     ))}
 
                   <div
-                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${
-                      isDataQueryingOpen ? "border-primary" : "border-gray-300"
-                    }`}
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${isDataQueryingOpen ? "border-primary" : "border-gray-300"
+                      }`}
                     onClick={() => {
                       setIsDataEntryOpen(isDataQueryingOpen);
                       setIsDataQueryingOpen(!isDataQueryingOpen);
@@ -151,7 +179,7 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-          <div className="flex-1 pt-20 min-h-screen">
+          <div className="flex-1 pt-20">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Viewer</CardTitle>
@@ -168,8 +196,10 @@ export default function Home() {
                   {isDataQueryingOpen && activeTab != 0 && (
                     <p className="text-xs pb-3">Enter the information below</p>
                   )}
-                  {isDataEntryOpen && renderContentDataEntry()}
-                  {isDataQueryingOpen && renderContentDataQuerying()}
+                  <AnimatePresence>
+                    {isDataEntryOpen && renderContentDataEntry()}
+                    {isDataQueryingOpen && renderContentDataQuerying()}
+                  </AnimatePresence>
                 </CardDescription>
               </CardContent>
             </Card>
