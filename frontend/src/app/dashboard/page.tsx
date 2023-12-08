@@ -18,11 +18,16 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserRoleProvider, useUserRole } from "@/components/adminContext/UserRoleContext";
+import { AdminActionMenu } from "@/components/menu/AdminTable/AdminActionMenu";
 
 export default function Home() {
-  const [isDataEntryOpen, setIsDataEntryOpen] = useState(false);
-  const [isDataQueryingOpen, setIsDataQueryingOpen] = useState(false);
+  const [currentOpenTab, setCurrentOpenTab] = useState<string | null>(null);
+
+  const [adminTable, setAdminTable] = useState([]);
+  const [tableName, setTableName] = useState('' as string);
   const [activeTab, setActiveTab] = useState(1);
+  const userRole = useUserRole();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,10 +75,10 @@ export default function Home() {
     return (
       <div>
         <motion.div
-          key={`${isDataEntryOpen}${activeTab}`}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
+          key={`${currentOpenTab == "entry"}${activeTab}`}
+          initial={{ y: "20px" }} // start from above the viewport
+          animate={{ y: 0 }} // animate to its original position
+          exit={{ y: "20px" }} // exit to above the viewport
           transition={{ duration: 0.3 }}
         >
           {component()}
@@ -102,10 +107,10 @@ export default function Home() {
     return (
       <div>
         <motion.div
-          key={`${isDataEntryOpen}${activeTab}`}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
+          key={`${currentOpenTab == "entry"}${activeTab}`}
+          initial={{ y: "20px" }} // start from above the viewport
+          animate={{ y: 0 }} // animate to its original position
+          exit={{ y: "20px" }} // exit to above the viewport
           transition={{ duration: 0.3 }}
         >
           {component()}
@@ -113,6 +118,18 @@ export default function Home() {
       </div>
     );
   };
+
+  const getAdminTable = async () => {
+    const res = await fetch("/api/get_all_tables");
+    const data = await res.json();
+    setAdminTable(data.tables);
+  }
+
+  useEffect(() => {
+    if (currentOpenTab == "admin") {
+      getAdminTable();
+    }
+  }, [currentOpenTab])
 
   return (
     <div className="min-h-screen w-screen">
@@ -130,17 +147,16 @@ export default function Home() {
                     Choose either Data Entry or Querying Data
                   </p>
                   <div
-                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${isDataEntryOpen ? "border-primary" : "border-gray-300"
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "entry" ? "border-primary" : "border-gray-300"
                       }`}
                     onClick={() => {
-                      setIsDataQueryingOpen(isDataEntryOpen);
-                      setIsDataEntryOpen(!isDataEntryOpen);
+                      setCurrentOpenTab("entry");
                       setActiveTab(0);
                     }}
                   >
                     Data Entry
                   </div>
-                  {isDataEntryOpen &&
+                  {currentOpenTab == "entry" &&
                     dataEntryTabs.map((tab, index) => (
                       <div
                         key={tab.id}
@@ -153,18 +169,17 @@ export default function Home() {
                     ))}
 
                   <div
-                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${isDataQueryingOpen ? "border-primary" : "border-gray-300"
+                    className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "query" ? "border-primary" : "border-gray-300"
                       }`}
                     onClick={() => {
-                      setIsDataEntryOpen(isDataQueryingOpen);
-                      setIsDataQueryingOpen(!isDataQueryingOpen);
+                      setCurrentOpenTab("query");
                       setActiveTab(0);
                     }}
                   >
                     Data Querying
                   </div>
 
-                  {isDataQueryingOpen &&
+                  {currentOpenTab == "query" &&
                     dataQueryingTabs.map((tab, index) => (
                       <div
                         key={tab.id}
@@ -175,30 +190,53 @@ export default function Home() {
                         {`${index + 1}. ${tab.label}`} {/* Add an index */}
                       </div>
                     ))}
+                  {userRole?.isAdmin && <div>
+                    <div
+                      className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "admin" ? "border-primary" : "border-gray-300"
+                        }`}
+                      onClick={() => {
+                        setCurrentOpenTab("admin");
+                        setActiveTab(0);
+                      }}
+                    >
+                      Admin Table View
+                    </div>
+                    {currentOpenTab == "admin" && adminTable.map((table, index) => (
+                      <div
+                        key={table}
+                        className={`cursor-pointer p-2 border-b duration-300 hover:border-b-primary `}
+                        onClick={() => setTableName(table)}
+                        style={{ marginLeft: "20px", fontSize: "0.9em" }} // Adjust the styles here
+                      >
+                        {`${index + 1}. Table ${table}`} {/* Add an index */}
+                      </div>
+                    ))}
+                  </div>}
                 </CardDescription>
               </CardContent>
             </Card>
           </div>
-          <div className="flex-1 pt-20">
+          <div className="flex-1 pt-20 max-w-[70%]">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Viewer</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="max-h-[60vh]">
-                  {(activeTab == 3 || activeTab == 4) && isDataEntryOpen && (
+                  {(activeTab == 3 || activeTab == 4) && currentOpenTab == "entry" && (
                     <p className="text-xs pb-5">Populates the form fields</p>
                   )}
-                  {(activeTab == 1 || activeTab == 2) && isDataEntryOpen && (
+                  {(activeTab == 1 || activeTab == 2) && currentOpenTab == "entry" && (
                     <p className="text-xs pb-0">Select List of Actions below</p>
                   )}
 
-                  {isDataQueryingOpen && activeTab != 0 && (
+                  {currentOpenTab == "query" && activeTab != 0 && (
                     <p className="text-xs pb-3">Enter the information below</p>
                   )}
                   <AnimatePresence>
-                    {isDataEntryOpen && renderContentDataEntry()}
-                    {isDataQueryingOpen && renderContentDataQuerying()}
+                    {currentOpenTab == "entry" && renderContentDataEntry()}
+                    {currentOpenTab == "query" && renderContentDataQuerying()}
+                    {currentOpenTab == "admin" && <AdminActionMenu table={tableName} />}
                   </AnimatePresence>
                 </CardDescription>
               </CardContent>
@@ -206,6 +244,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
