@@ -58,9 +58,8 @@ export const ByProgram = () => {
     <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
       <div className="w-[80%] max-w-[80%] flex flex-row space-x-5 p-1">
         <Input
-          placeholder={`Enter the program name to access ${
-            activeQuery === "Courses" ? "courses" : "objectives"
-          } data.`}
+          placeholder={`Enter the program name to access ${activeQuery === "Courses" ? "courses" : "objectives"
+            } data.`}
           onChange={(e) => {
             setProgramName(e.target.value);
           }}
@@ -70,21 +69,19 @@ export const ByProgram = () => {
       <div className="flex space-x-4">
         <Button
           onClick={() => setActiveQuery("Courses")}
-          className={`px-4 py-2 hover:text-white ${
-            activeQuery === "Courses"
-              ? "bg-primary text-white"
-              : "bg-gray-200 text-gray-700"
-          } rounded`}
+          className={`px-4 py-2 hover:text-white ${activeQuery === "Courses"
+            ? "bg-primary text-white"
+            : "bg-gray-200 text-gray-700"
+            } rounded`}
         >
           Courses
         </Button>
         <Button
           onClick={() => setActiveQuery("Objectives")}
-          className={`px-4 py-2 hover:text-white  ${
-            activeQuery === "Objectives"
-              ? "bg-primary text-white"
-              : "bg-gray-200 text-gray-700"
-          } rounded`}
+          className={`px-4 py-2 hover:text-white  ${activeQuery === "Objectives"
+            ? "bg-primary text-white"
+            : "bg-gray-200 text-gray-700"
+            } rounded`}
         >
           Objectives
         </Button>
@@ -99,9 +96,11 @@ export const ByProgram = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
+              <TableHead>Course ID</TableHead>
               <TableHead>Course Name</TableHead>
               <TableHead>Year</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Objective Description</TableHead>
+              <TableHead>SubObjective Description</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -111,6 +110,8 @@ export const ByProgram = () => {
                 <TableCell>{data[0]}</TableCell>
                 <TableCell>{data[1]}</TableCell>
                 <TableCell>{data[2]}</TableCell>
+                <TableCell>{data[3]}</TableCell>
+                <TableCell>{data[4]}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -128,6 +129,7 @@ export const ByProgram = () => {
               <TableHead className="w-[20px]">Index</TableHead>
               <TableHead>Objective Code</TableHead>
               <TableHead>Objective Description</TableHead>
+              <TableHead>Department ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -136,6 +138,7 @@ export const ByProgram = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{data[0]}</TableCell>
                 <TableCell>{data[1]}</TableCell>
+                <TableCell>{data[2]}</TableCell>
               </TableRow>
             ))}
           </TableBody>

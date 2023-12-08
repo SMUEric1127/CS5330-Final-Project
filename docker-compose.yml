@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  mysql:
+  mysql_db:
     image: mysql:latest
     restart: always
     environment:
@@ -18,16 +18,40 @@ services:
 
   phpmyadmin:
     depends_on:
-      - mysql
+      - mysql_db
     image: phpmyadmin
     restart: always
     ports:
       - 8080:80
     environment:
-      PMA_HOST: mysql
+      PMA_HOST: mysql_db
       PMA_PORT: 3306
       PMA_USER: cs5330
       PMA_PASSWORD: Sql5330!
+    networks:
+      - cs5330_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env
+    ports:
+      - 3000:3000
+    networks:
+      - cs5330_network
+
+  backend:
+    depends_on:
+      - mysql_db
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - 8000:8000
     networks:
       - cs5330_network
 
