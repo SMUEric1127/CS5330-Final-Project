@@ -170,6 +170,7 @@ export default function Home() {
                   <p className="text-xs pb-5">
                     Choose either Data Entry or Querying Data
                   </p>
+
                   <div
                     className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "entry" ? "border-primary" : "border-gray-300"
                       }`}
