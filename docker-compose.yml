@@ -43,8 +43,6 @@ services:
       - cs5330_network
 
   backend:
-    depends_on:
-      - mysql_db
     build:
       context: ./backend
       dockerfile: Dockerfile
