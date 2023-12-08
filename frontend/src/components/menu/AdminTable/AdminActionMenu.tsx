@@ -33,6 +33,7 @@ export const AdminActionMenu = ({ table }: { table: string }) => {
             exit={{ y: "50px" }} // exit to above the viewport
             transition={{ duration: 0.3 }}
         >
+            {tableData.columns && tableData.columns.length == 0 && <p className="text-center">No data available, select a table on the left</p>}
             <Table>
                 <TableHeader>
                     <TableRow>

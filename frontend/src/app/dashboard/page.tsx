@@ -20,14 +20,18 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserRoleProvider, useUserRole } from "@/components/adminContext/UserRoleContext";
 import { AdminActionMenu } from "@/components/menu/AdminTable/AdminActionMenu";
+import { Loader2 } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export default function Home() {
   const [currentOpenTab, setCurrentOpenTab] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState(false);
   const [adminTable, setAdminTable] = useState([]);
   const [tableName, setTableName] = useState('' as string);
   const [activeTab, setActiveTab] = useState(1);
   const userRole = useUserRole();
+
+  const { theme } = useTheme();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,14 +56,18 @@ export default function Home() {
   ];
 
   const handleTabClick = (tabId: number) => {
-    setActiveTab(tabId);
+    setLoading(true);
+    setTimeout(() => {
+      setActiveTab(tabId);
+      setLoading(false);
+    }, 200);
   };
 
   const renderContentDataEntry = () => {
     const component = () => {
       switch (activeTab) {
         case 0:
-          return <div className="text-xs pb-5">Empty, select a category</div>;
+          return <p className="text-center">Empty, select a category</p>;
         case 1:
           return <CreateTable />;
         case 2:
@@ -91,7 +99,7 @@ export default function Home() {
     const component = () => {
       switch (activeTab) {
         case 0:
-          return <div className="text-xs pb-5">Empty, select a category</div>;
+          return <p className="text-center">Empty, select a category</p>;
         case 1:
           return <ByDepartment />;
         case 2:
@@ -131,6 +139,22 @@ export default function Home() {
     }
   }, [currentOpenTab])
 
+  const changeOpenTab = (tab: string) => {
+    setLoading(true);
+    setTimeout(() => {
+      setCurrentOpenTab(tab);
+      setLoading(false);
+    }, 100);
+  }
+
+  const changeTableName = (table: string) => {
+    setLoading(true);
+    setTimeout(() => {
+      setTableName(table);
+      setLoading(false);
+    }, 100);
+  }
+
   return (
     <div className="min-h-screen w-screen">
       <NavigationMain />
@@ -150,7 +174,7 @@ export default function Home() {
                     className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "entry" ? "border-primary" : "border-gray-300"
                       }`}
                     onClick={() => {
-                      setCurrentOpenTab("entry");
+                      changeOpenTab("entry");
                       setActiveTab(0);
                     }}
                   >
@@ -172,7 +196,7 @@ export default function Home() {
                     className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "query" ? "border-primary" : "border-gray-300"
                       }`}
                     onClick={() => {
-                      setCurrentOpenTab("query");
+                      changeOpenTab("query");
                       setActiveTab(0);
                     }}
                   >
@@ -195,22 +219,28 @@ export default function Home() {
                       className={`cursor-pointer px-4 py-2 border-b duration-300 hover:border-b-primary ${currentOpenTab == "admin" ? "border-primary" : "border-gray-300"
                         }`}
                       onClick={() => {
-                        setCurrentOpenTab("admin");
+                        changeOpenTab("admin");
                         setActiveTab(0);
                       }}
                     >
                       Admin Table View
                     </div>
-                    {currentOpenTab == "admin" && adminTable.map((table, index) => (
+                    {currentOpenTab == "admin" && adminTable.length > 0 && adminTable.map((table, index) => (
                       <div
                         key={table}
                         className={`cursor-pointer p-2 border-b duration-300 hover:border-b-primary `}
-                        onClick={() => setTableName(table)}
+                        onClick={() => changeTableName(table)}
                         style={{ marginLeft: "20px", fontSize: "0.9em" }} // Adjust the styles here
                       >
                         {`${index + 1}. Table ${table}`} {/* Add an index */}
                       </div>
                     ))}
+
+                    {currentOpenTab == "admin" && adminTable.length == 0 &&
+                      (<p className="text-xs pl-5 pt-1">
+                        Empty Table, initialize a table first
+                      </p>)
+                    }
                   </div>}
                 </CardDescription>
               </CardContent>
@@ -224,20 +254,25 @@ export default function Home() {
               <CardContent>
                 <CardDescription className="max-h-[60vh]">
                   {(activeTab == 3 || activeTab == 4) && currentOpenTab == "entry" && (
-                    <p className="text-xs pb-5">Populates the form fields</p>
+                    <p className="pb-5">Populates the form fields</p>
                   )}
                   {(activeTab == 1 || activeTab == 2) && currentOpenTab == "entry" && (
-                    <p className="text-xs pb-0">Select List of Actions below</p>
+                    <p className="pb-0">Select List of Actions below</p>
                   )}
 
                   {currentOpenTab == "query" && activeTab != 0 && (
-                    <p className="text-xs pb-3">Enter the information below</p>
+                    <p className="pb-3">Enter the information below</p>
                   )}
-                  <AnimatePresence>
+                  {!loading && <AnimatePresence>
                     {currentOpenTab == "entry" && renderContentDataEntry()}
                     {currentOpenTab == "query" && renderContentDataQuerying()}
                     {currentOpenTab == "admin" && <AdminActionMenu table={tableName} />}
-                  </AnimatePresence>
+                  </AnimatePresence>}
+                  {loading && (
+                    <div className="flex justify-center items-center min-h-[50vh]">
+                      <Loader2 className="animate-spin" size={50} color={theme == "dark" ? "white" : "black"} />
+                    </div>
+                  )}
                 </CardDescription>
               </CardContent>
             </Card>
