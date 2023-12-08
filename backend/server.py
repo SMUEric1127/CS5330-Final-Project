@@ -191,7 +191,10 @@ async def populate_data():
         for command in sql_commands:
             # Ignore empty commands
             if command.strip() != '':
-                help_functions.execute_query(connection, command)
+                if not help_functions.execute_query(connection, command):
+                    return {"message": f"Cannot populate data, something wrong happened!", "statusCode": 500}
+        
+        return {"message": f"Successfully populated all data", "statusCode": 200}
     except Exception as e:
         # Handle any exceptions during the process
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
@@ -652,7 +655,7 @@ async def update_record(
 
 
 def list_programs_by_department(department_id):
-    query = "SELECT DeptID, ProgName FROM Program WHERE DeptID = %s;"
+    query = "SELECT DeptID, ProgName, FacultyLead, FacultyLeadID, FacultyLeadEmail FROM Program WHERE DeptID = %s;"
     params = (department_id,)
     return help_functions.execute_query(connection, query, params)
 
@@ -678,10 +681,12 @@ def list_faculty_by_department(department_id):
 def list_courses_by_program(program_name):
     query = """
     SELECT
+        C.CourseID AS CouseID,
         C.Title AS CourseTitle,
         S.Year,
         O.Description AS ObjectiveDescription,
-        SO.Description AS SubObjectivesDescription
+        SO.Description AS SubObjectivesDescription,
+        C.DeptID
     FROM Course C
     JOIN Section S ON C.CourseID = S.CourseID
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
@@ -696,7 +701,7 @@ def list_courses_by_program(program_name):
 
 def list_objectives_by_program(program_name):
     query = """
-    SELECT O.ObjCode, O.Description
+    SELECT O.ObjCode, O.Description, O.DeptID
     FROM Objectives O
     JOIN Program P ON P.ProgName = O.ProgName
     WHERE O.ProgName = %s;
@@ -843,6 +848,29 @@ async def list_aggregation_results_endpoint(query: AcademicYearQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/get_all_tables/")
+async def get_all_tables():
+    try:
+        tables = help_functions.valid_tables(connection)
+        return {"tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class TableName(BaseModel):
+    table_name: str
+
+@router.post("/get_table_data/")
+async def get_table_data(table: TableName):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {table.table_name}")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 app.include_router(router=router)
 if __name__ == "__main__":
     if connection is None:
