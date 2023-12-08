@@ -3,7 +3,6 @@ from mysql.connector import Error
 import re
 import time
 
-
 def connect_database(host_name, user_name, user_password, db_name):
     print(
         f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}")
