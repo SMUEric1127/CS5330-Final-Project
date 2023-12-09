@@ -159,17 +159,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen w-screen">
+    <div className="min-h-fit w-screen">
       <NavigationMain />
       <div className="w-max[90vw] px-10 h-full items-center justify-center">
         <div className="flex md:space-x-10 min-h-screen flex-col md:flex-row sm:h-fit">
-          <div className="flex-2 w-full md:max-w-[30%] sm:w-full pt-10 pb-10 md:py-20 max-h-[80vh]">
+          <div className="flex-2 w-full md:max-w-[30%] sm:w-full pt-10 pb-5 md:py-20 max-h-[80vh]">
             <Card className="min-h-fit md:min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Menu</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
+                <CardDescription className="max-h-[50vh] md:max-h-[70vh] overflow-y-auto">
                   <p className="text-xs pb-5">
                     Choose either Data Entry or Querying Data
                   </p>
