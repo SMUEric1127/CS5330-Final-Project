@@ -41,10 +41,9 @@ services:
       - 3000:3000
     networks:
       - cs5330_network
+    image: cs5330-frontend:latest
 
   backend:
-    depends_on:
-      - mysql_db
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -54,6 +53,7 @@ services:
       - 8000:8000
     networks:
       - cs5330_network
+    image: cs5330-backend:latest
 
 networks:
   cs5330_network:
