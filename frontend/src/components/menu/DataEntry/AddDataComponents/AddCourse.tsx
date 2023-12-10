@@ -99,7 +99,9 @@ const AddCourse: React.FC<AddCourseProps> = ({ courseData, setCourseData }) => {
             <SelectGroup>
               <SelectLabel>Department</SelectLabel>
               {departmentData.map((department: any) => (
-                <SelectItem value={department}>{department}</SelectItem>
+                <SelectItem value={department} key={department}>
+                  {department}
+                </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>

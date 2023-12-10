@@ -97,7 +97,9 @@ const AddFaculty = ({ facultyData, setFacultyData }: any) => {
             <SelectGroup>
               <SelectLabel>Department</SelectLabel>
               {departmentData.map((department: any) => (
-                <SelectItem value={department}>{department}</SelectItem>
+                <SelectItem value={department} key={department}>
+                  {department}
+                </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
