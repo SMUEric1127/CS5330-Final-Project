@@ -3,37 +3,38 @@ from mysql.connector import Error
 import re
 import time
 
+TIMEOUT = 10
+
+
 def connect_database(host_name, user_name, user_password, db_name):
     print(
-        f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}")
+        f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}, connection time out is {TIMEOUT} seconds, please change it accordingly")
     connection = None
     while connection is None:
         try:
             connection = mysql.connector.connect(
+                host="localhost",
+                user=user_name,
+                passwd=user_password,
+                database=db_name,
+                connection_timeout=10
+            )
+            if connection.is_connected():
+                print(
+                    "Didn't found mysql_db through docker, tried localhost and success.")
+                print("MySQL Database connection successful")
+                return connection
+        except Error as err:
+            connection = mysql.connector.connect(
                 host=host_name,
                 user=user_name,
                 passwd=user_password,
-                database=db_name
+                database=db_name,
+                connection_timeout=10
             )
             if connection.is_connected():
                 print("MySQL Database connection successful")
                 return connection
-        except Error as err:
-            try:
-                connection = mysql.connector.connect(
-                    host="localhost",
-                    user=user_name,
-                    passwd=user_password,
-                    database=db_name
-                )
-                if connection.is_connected():
-                    print(
-                        "Didn't found mysql_db through docker, tried localhost and success.")
-                    print("MySQL Database connection successful")
-                    return connection
-            except Error as err:
-                pass
-
             print("Cannot connect to " + host_name)
             print("Retrying in 5 seconds...")
             time.sleep(5)
@@ -207,9 +208,13 @@ def validate_prog_course_input(p_id, c_id):
 
 def validate_objective_input(o_code, o_desc, prog_id, p_dept):
     if o_code:
-        if not re.match(r"^[A-Za-z]{1,5}[0-9]{1,2}[A-Za-z]{1,2}[0-9]{1,2}$", o_code):
+        # check if it's contain space
+        if " " in o_code:
             print(f"Invalid objective code: {o_code}")
-            return f"Invalid objective code: {o_code}", False
+            return f"Invalid objective code: {o_code}, remove any space", False
+        if not re.match(r"^[A-Za-z0-9]+$", o_code):
+            print(f"Invalid objective code: {o_code}")
+            return f"Invalid objective code: {o_code}, remove special character", False
     if not re.match(r"^[A-Za-z0-9 ]{1,500}$", o_desc):
         print(f"Invalid objective description: {o_desc}")
         return f"Invalid objective description: {o_desc}", False
@@ -226,9 +231,11 @@ def validate_sub_objective_input(s_desc, o_code):
     if not re.match(r"^[A-Za-z0-9 ]{1,500}$", s_desc):
         print(f"Invalid sub-objective description: {s_desc}")
         return f"Invalid sub-objective description: {s_desc}", False
-    if not re.match(r"^[A-Za-z]{1,5}[0-9]{1,2}[A-Za-z]{1,2}[0-9]{1,2}$", o_code):
+    if " " in o_code:
         print(f"Invalid objective code: {o_code}")
-        return f"Invalid objective code: {o_code}", False
+        return f"Invalid objective code: {o_code}, remove any space", False
+    if not re.match(r"^[A-Za-z0-9]+$", o_code):
+        print(f"Invalid objective code: {o_code}")
     return "Success", True
 
 
@@ -276,7 +283,8 @@ def replace_ampersand(text):
 
 
 def title_except(s):
-    exceptions = ["the", "and", "in", "for", "on", "with", "at", "by", "from", "of", "a", "an", "to"]
+    exceptions = ["the", "and", "in", "for", "on",
+                  "with", "at", "by", "from", "of", "a", "an", "to"]
     word_list = s.split()
     final = [word_list[0].capitalize()]
     for word in word_list[1:]:

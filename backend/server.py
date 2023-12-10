@@ -27,6 +27,7 @@ load_dotenv(dotenv_path)
 print(dotenv_path)
 
 connection = None
+print("Connecting to db from outside main")
 connection = help_functions.connect_database(
     os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
 
@@ -49,7 +50,7 @@ class AcademicYearQuery(BaseModel):
     start_year: int
 
 
-@router.get("/")
+@app.get("/")
 async def root():
     # Get something simple without any params
     return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
@@ -194,7 +195,7 @@ async def populate_data():
             if command.strip() != '':
                 if not help_functions.execute_query(connection, command):
                     return {"message": f"Cannot populate data, something wrong happened!", "statusCode": 500}
-        
+
         return {"message": f"Successfully populated all data", "statusCode": 200}
     except Exception as e:
         # Handle any exceptions during the process
@@ -259,18 +260,21 @@ async def add_faculty(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@router.post("/add_program/")
+@router.get("/add_program/")
 async def add_program(
     prog_name: str,
     dept_id: str,
-    leadID: str
+    lead_id: str
 ):
     try:
-        if help_functions.validate_program_input(prog_name, dept_id, leadID):
+        message, success = help_functions.validate_program_input(
+            prog_name, dept_id, lead_id)
+        if success:
             prog_name = help_functions.replace_ampersand(prog_name)
             prog_name = help_functions.title_except(prog_name)
             prog_dept = dept_id.upper()
-            program_count = help_functions.select_query(connection, sql_cmds.count_program, (prog_dept,))
+            program_count = help_functions.select_query(
+                connection, sql_cmds.count_program, (prog_dept,))
 
             if not program_count:
                 return {"message": "Error getting program count.", "statusCode": 500}
@@ -278,19 +282,21 @@ async def add_program(
             prog_count = program_count[0]['program_count']
             progID = f"{prog_dept}P{prog_count + 1}"
 
-            lead_details = help_functions.select_query(connection, sql_cmds.get_faculty_info, (leadID,))
+            lead_details = help_functions.select_query(
+                connection, sql_cmds.get_faculty_info, (lead_id,))
             if lead_details:
                 lead, leadEmail = lead_details[0]['Name'], lead_details[0]['Email']
                 add_program_query = ("INSERT INTO Program ("
                                      "ProgID, ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) VALUES ("
                                      "%s, %s, %s, %s, %s, %s)")
-                help_functions.execute_query(connection, add_program_query, (progID, prog_name, prog_dept, lead, leadID, leadEmail))
+                help_functions.execute_query(
+                    connection, add_program_query, (progID, prog_name, prog_dept, lead, lead_id, leadEmail))
 
                 return {"message": "Program added successfully.", "statusCode": 200}
             else:
-                return {"message": f"Faculty with ID {leadID} does not exist.", "statusCode": 500}
+                return {"message": f"Faculty with ID {lead_id} does not exist.", "statusCode": 500}
         else:
-            return {"message": "Program not added: Invalid input.", "statusCode": 500}
+            return {"message": f"Program not added: {message}", "statusCode": 500}
 
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
@@ -326,7 +332,7 @@ async def add_course(
             else:
                 return {"message": "Cannot add course!", "statusCode": 500}
         else:
-            return {"message": "Course not added: Invalid input", "statusCode": 500}
+            return {"message": f"Course not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -361,11 +367,13 @@ async def add_section(
             else:
                 return {"message": "Cannot add course!", "statusCode": 500}
         else:
-            return {"message": "Cannot add section, invalid input", "statusCode": 500}
+            return {"message": f"Cannot add section: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Assign a Course to Program
+
+
 @router.post("/assign_program_course/")
 async def assign_program_course(
     progID: str,
@@ -375,17 +383,20 @@ async def assign_program_course(
         if help_functions.validate_prog_course_input(progID, courseID):
             progID = progID.upper()
             courseID = courseID.upper()
-            
-            check_program = help_functions.select_query(connection, sql_cmds.check_program_id_exists, (progID,))
+
+            check_program = help_functions.select_query(
+                connection, sql_cmds.check_program_id_exists, (progID,))
             if not check_program or check_program[0]['program_count'] == 0:
                 return {"message": f"Program ID {progID} does not exist. Program course not added: please enter valid program id.", "statusCode": 500}
 
-            check_course = help_functions.select_query(connection, sql_cmds.check_course_exists, (courseID,))
+            check_course = help_functions.select_query(
+                connection, sql_cmds.check_course_exists, (courseID,))
             if not check_course or check_course[0]['course_count'] == 0:
                 return {"message": f"Course ID {courseID} does not exist. Program course not added: please enter valid course id.", "statusCode": 500}
 
             add_prog_course_query = "INSERT INTO ProgramCourses (ProgID, CourseID) VALUES (%s, %s)"
-            help_functions.execute_query(connection, add_prog_course_query, (progID, courseID))
+            help_functions.execute_query(
+                connection, add_prog_course_query, (progID, courseID))
 
             return {"message": "Program course added successfully.", "statusCode": 200}
         else:
@@ -398,30 +409,28 @@ async def assign_program_course(
 @router.get("/add_objective/")
 async def add_objective(
     description: str,
-    progID: str,
+    prog_id: str,
     dept_id: str,
     obj_code: str | None = None,
 ):
     try:
         message, success = help_functions.validate_objective_input(
-            obj_code, description, progID, dept_id)
+            obj_code, description, prog_id, dept_id)
         if success:
             # obj_code = obj_code.upper()
-            progID = progID.upper()
+            prog_id = prog_id.upper()
 
             checks_passed = True
             result = help_functions.select_query(
-                connection, sql_cmds.count_obj_query, (progID, dept_id))
+                connection, sql_cmds.count_obj_query, (prog_id, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{progID}{dept_id}{count + 1}"
 
+            next_obj_code = f"{prog_id}{dept_id}{count + 1}"
             if obj_code and obj_code != next_obj_code:
                 return {
-                    "message": f"Invalid objective code: {obj_code}. "
-                    f"Next valid objective code: {next_obj_code}. "
-                    "Objective not added: please enter the next valid objective code, or let the database generate one"
+                    "message": f"Invalid objective code: {obj_code}. Next valid objective code: {next_obj_code}. ",
+                    "statusCode": 500
                 }
-                checks_passed = False
             elif checks_passed and obj_code == '':
                 obj_code = next_obj_code
 
@@ -432,13 +441,13 @@ async def add_objective(
                 )
 
                 results = help_functions.execute_query(
-                    connection, add_objective_query, (obj_code, description, progID, dept_id))
+                    connection, add_objective_query, (obj_code, description, prog_id, dept_id))
                 if results:
                     return {"message": "Objective added successfully", "statusCode": 200}
                 else:
-                    return {"message": "Cannot add section!", "statusCode": 500}
+                    return {"message": "Cannot add objective!", "statusCode": 500}
         else:
-            return {"message": "Objective not added: Invalid input", "statusCode": 500}
+            return {"message": f"Objective not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -460,8 +469,7 @@ async def add_sub_objective(
                 connection, sql_cmds.check_obj_exists, (obj_code,))
             if not obj_exists or obj_exists[0]['obj_count'] == 0:
                 return {
-                    "message": f"Learning objective code {obj_code} does not exist. "
-                    "Sub-objective not added: please enter a valid learning objective code"
+                    "message": f"Learning objective code {obj_code} does not exist. ", "statusCode": 500
                 }
 
             result = help_functions.select_query(
@@ -480,7 +488,7 @@ async def add_sub_objective(
             else:
                 return {"message": "Cannot add sub-objective!", "statusCode": 500}
         else:
-            return {"message": "Sub-objective not added: Invalid input", "statusCode": 500}
+            return {"message": f"Sub-objective not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -892,8 +900,10 @@ async def get_all_tables():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 class TableName(BaseModel):
     table_name: str
+
 
 @router.post("/get_table_data/")
 async def get_table_data(table: TableName):
@@ -905,11 +915,73 @@ async def get_table_data(table: TableName):
         return {"columns": columns, "data": data, "statusCode": 200}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+@router.get("/faculty")
+async def get_faculty():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT FacultyID, Name, Email FROM Faculty")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/department")
+async def get_department():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT DeptID, DeptName FROM Department")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/program")
+async def get_program():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT ProgID, ProgName FROM Program")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/course")
+async def get_course():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT CourseID, Title FROM Course")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/objective")
+async def get_objective():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT ObjCode FROM Objectives")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 app.include_router(router=router)
 if __name__ == "__main__":
     if connection is None:
+        print("Connecting to db from inside main")
         connection = help_functions.connect_database(
             os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+    print("Starting uvicorn app")
     uvicorn.run(app, host="0.0.0.0", port=8000)
     app.include_router(router=router)

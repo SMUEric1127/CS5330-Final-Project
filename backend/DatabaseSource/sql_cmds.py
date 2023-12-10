@@ -1,6 +1,6 @@
 create_department_table = """
 CREATE TABLE Department(
-DeptName VARCHAR(40) PRIMARY KEY,
+DeptName VARCHAR(128) PRIMARY KEY,
 DeptID VARCHAR(4) UNIQUE NOT NULL
 )
 """
@@ -8,8 +8,8 @@ DeptID VARCHAR(4) UNIQUE NOT NULL
 create_faculty_table = """
 CREATE TABLE Faculty(
 FacultyID CHAR(8) PRIMARY KEY,
-Name VARCHAR(40) NOT NULL,
-Email VARCHAR(40) UNIQUE NOT NULL,
+Name VARCHAR(128) NOT NULL,
+Email VARCHAR(128) UNIQUE NOT NULL,
 DeptID VARCHAR(4) NOT NULL,
 Position ENUM('Full', 'Associate', 'Assistant', 'Adjunct') NOT NULL,
 FOREIGN KEY (DeptID) REFERENCES Department(DeptID)
@@ -21,9 +21,9 @@ CREATE TABLE Program(
 ProgID VARCHAR(10) PRIMARY KEY,
 ProgName VARCHAR(50) NOT NULL,
 DeptID VARCHAR(4) NOT NULL,
-FacultyLead VARCHAR(40) NOT NULL,
+FacultyLead VARCHAR(128) NOT NULL,
 FacultyLeadID VARCHAR(8) NOT NULL,
-FacultyLeadEmail VARCHAR(40) NOT NULL,
+FacultyLeadEmail VARCHAR(128) NOT NULL,
 FOREIGN KEY (DeptID) REFERENCES Department(DeptID),
 FOREIGN KEY (FacultyLeadID) REFERENCES Faculty(FacultyID),
 FOREIGN KEY (FacultyLeadEmail) REFERENCES Faculty(Email)
@@ -67,7 +67,7 @@ FOREIGN KEY (CourseID) REFERENCES Course(CourseID)
 
 create_objectives_table = """
 CREATE TABLE Objectives(
-ObjCode VARCHAR(10) PRIMARY KEY,
+ObjCode VARCHAR(128) PRIMARY KEY,
 Description TEXT NOT NULL,
 ProgID VARCHAR(10) NOT NULL,
 DeptID VARCHAR(4) NOT NULL,
@@ -78,9 +78,9 @@ FOREIGN KEY (ProgID) REFERENCES Program(ProgID)
 
 create_sub_objectives_table = """
 CREATE TABLE SubObjectives(
-SubObjCode VARCHAR(12) PRIMARY KEY,
+SubObjCode VARCHAR(128) PRIMARY KEY,
 Description TEXT NOT NULL,
-ObjCode VARCHAR(10) NOT NULL,
+ObjCode VARCHAR(128) NOT NULL,
 FOREIGN KEY (ObjCode) REFERENCES Objectives(ObjCode)
 )
 """
@@ -89,8 +89,8 @@ create_course_objectives_table = """
 CREATE TABLE CourseObjectives(
 CourseObjID VARCHAR(24) PRIMARY KEY,
 CourseID VARCHAR(8) NOT NULL,
-ObjCode VARCHAR(10) NOT NULL,
-SubObjCode VARCHAR(12),
+ObjCode VARCHAR(128) NOT NULL,
+SubObjCode VARCHAR(128),
 FOREIGN KEY (CourseID) REFERENCES Course(CourseID),
 FOREIGN KEY (ObjCode) REFERENCES Objectives(ObjCode)
 )
