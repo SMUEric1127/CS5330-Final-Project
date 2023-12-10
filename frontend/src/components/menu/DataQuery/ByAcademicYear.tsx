@@ -64,6 +64,7 @@ export const ByAcademicYear = () => {
           onChange={(e) => {
             setStartYear(Number(e.target.value));
           }}
+          type="number"
         />
         <Button onClick={handleSearch}>Search</Button>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,12 +11,23 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ProgramCombobox } from "./ComboxBox/Program";
 
 export const ByProgramAndSemester = () => {
   const [programName, setProgramName] = useState<undefined | string>(undefined);
   const [semester, setSemester] = useState<undefined | string>(undefined);
   const [year, setYear] = useState<undefined | number>(undefined);
   const [evaluations, setEvaluations] = useState([]);
+  const semesterList = ["Fall", "Spring", "Summer"];
 
   const handleSearch = async () => {
     if (
@@ -53,21 +64,70 @@ export const ByProgramAndSemester = () => {
     }
   };
 
+  // We will update a list of departments based on what user inputs
+  const [programFetchList, setProgramFetchList] = useState<string[]>([]);
+
+  const handleProgramFetch = async () => {
+    try {
+      // Add the query param ProgramID to the URL
+      const url = `/api/program`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        return;
+      }
+
+      // Assuming the server returns a JSON response
+      const responseData = await response.json();
+
+      // Concat the responseData.data (DeptID - DeptName) to the ProgramFetchList
+      const concatResult = responseData.data.map((row: any) => row.join(" - "));
+      setProgramFetchList(concatResult);
+    } catch (error) {
+      console.error(`Error`, error);
+    }
+  };
+
+  useEffect(() => {
+    handleProgramFetch();
+  }, []);
+
   return (
     <div className="flex items-center flex-col space-y-5 max-h-[60vh] min-h-fit">
       <div className="flex flex-row space-x-5 p-1">
-        <Input
+        {/* <Input
           placeholder="Enter the program name"
           onChange={(e) => {
             setProgramName(e.target.value);
           }}
-        />
-        <Input
-          placeholder="Enter the semester"
-          onChange={(e) => {
-            setSemester(e.target.value);
+        /> */}
+        <div className="min-w-[200px]">
+          <ProgramCombobox
+            programFetchList={programFetchList}
+            programName={programName}
+            setProgramName={setProgramName}
+          />
+        </div>
+        <Select
+          name="semester"
+          onValueChange={(value: any) => {
+            setSemester(value);
           }}
-        />
+        >
+          <SelectTrigger className="min-w-[100px]">
+            <SelectValue placeholder="Select a Semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Semester</SelectLabel>
+              {semesterList.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input
           placeholder="Enter the year"
           type="number"

@@ -735,7 +735,7 @@ def list_courses_by_program(program_name):
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
     JOIN Objectives O ON CO.ObjCode = O.ObjCode
     LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
-    WHERE C.DeptID IN (SELECT DeptID FROM Program WHERE ProgName = %s)
+    WHERE C.DeptID IN (SELECT DeptID FROM Program WHERE ProgID = %s)
     ORDER BY C.Title, S.Year;
     """
     # Converted WHERE C.DeptID = into C.DeptID IN so that it can get multiple department if same Program name
@@ -774,7 +774,7 @@ def list_evaluations_by_program_and_semester(program_name, semester, year):
     JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
     JOIN Course C ON S.CourseID = C.CourseID
     JOIN Program P ON C.DeptID = P.DeptID
-    WHERE P.ProgName = %s AND E.Semester = %s AND E.Year = %s;
+    WHERE P.ProgID = %s AND E.Semester = %s AND E.Year = %s;
     """
     params = (program_name, semester, year)
     return help_functions.execute_query(connection, query, params)
