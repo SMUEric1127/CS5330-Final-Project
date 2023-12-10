@@ -162,11 +162,7 @@ export const AddData = () => {
               programData.prog_name
             )}&dept_id=${encodeURIComponent(
               programData.dept_id
-            )}&lead=${encodeURIComponent(
-              programData.lead
-            )}&lead_id=${encodeURIComponent(
-              programData.leadID
-            )}&lead_email=${encodeURIComponent(programData.leadEmail)}`;
+            )}&lead_id=${encodeURIComponent(programData.leadID)}`;
             const successMessage = "Program added";
             sendQuery(url, successMessage);
           }}
