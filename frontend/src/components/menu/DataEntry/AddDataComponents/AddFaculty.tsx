@@ -38,8 +38,6 @@ const AddFaculty = ({ facultyData, setFacultyData }: any) => {
       ...prevData,
       [name]: e,
     }));
-
-    console.log("Updating departmetn id");
   };
 
   // fetch for department

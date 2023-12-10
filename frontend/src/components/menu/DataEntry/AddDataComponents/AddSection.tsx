@@ -49,7 +49,17 @@ const AddSection: React.FC<AddSectionProps> = ({
     }));
   };
 
+  const handleSelectChangeFaculty = (e: any) => {
+    const name = "facultyLeadID";
+    e = e.split("-")[0].replaceAll(" ", "");
+    setSectionData((prevData: any) => ({
+      ...prevData,
+      [name]: e,
+    }));
+  };
+
   const [courseData, setCourseData] = useState([]);
+  const [facultyData, setFacultyData] = useState([]);
 
   useEffect(() => {
     const fetchCourse = () => {
@@ -66,7 +76,22 @@ const AddSection: React.FC<AddSectionProps> = ({
           console.error("Error:", error);
         });
     };
+    const fetchFaculty = () => {
+      // Get the department, which got the id, name, email
+      fetch("/api/faculty", {
+        method: "GET",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // The data will be [[ID, Name, Email]] concat into string with - as separator
+          setFacultyData(data.data.map((row: any) => row.join(" - ")));
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
     fetchCourse();
+    fetchFaculty();
   }, []);
 
   return (
@@ -118,13 +143,28 @@ const AddSection: React.FC<AddSectionProps> = ({
         />
       </div>
       <div className="flex flex-row space-x-5">
-        <Input
+        {/* <Input
           name="facultyLeadID"
           type="text"
           placeholder="Faculty Lead ID"
           onChange={handleChange}
           value={sectionData.facultyLeadID || ""}
-        />
+        /> */}
+        <Select name="facultyLeadID" onValueChange={handleSelectChangeFaculty}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a faculty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Faculty List</SelectLabel>
+              {facultyData.map((faculty: any) => (
+                <SelectItem key={faculty} value={faculty}>
+                  {faculty}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input
           name="enrollCount"
           type="number"

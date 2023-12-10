@@ -54,7 +54,7 @@ export const AddData = () => {
   const [objectiveData, setObjectiveData] = useState({
     objCode: "",
     description: "",
-    prog: "",
+    prog_id: "",
     dept_id: "",
   });
 
@@ -226,12 +226,12 @@ export const AddData = () => {
         <PopupComponent
           onConfirm={() => {
             console.log(
-              `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog}, ${objectiveData.dept_id}`
+              `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog_id}, ${objectiveData.dept_id}`
             );
             const url = `/api/add_objective/?description=${encodeURIComponent(
               objectiveData.description
-            )}&prog=${encodeURIComponent(
-              objectiveData.prog
+            )}&prog_id=${encodeURIComponent(
+              objectiveData.prog_id
             )}&dept_id=${encodeURIComponent(
               objectiveData.dept_id
             )}&obj_code=${encodeURIComponent(objectiveData.objCode)}`;
