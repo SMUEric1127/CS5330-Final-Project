@@ -54,10 +54,10 @@ export default function Home() {
   ];
 
   const dataQueryingTabs = [
-    { id: 1, label: "By Department" },
-    { id: 2, label: "By Program" },
-    { id: 3, label: "By Semester and Program" },
-    { id: 4, label: "By Academic Year" },
+    { id: 1, label: "List by Department" },
+    { id: 2, label: "List by Program" },
+    { id: 3, label: "Evaluation by Semester and Program" },
+    { id: 4, label: "Evaluation by Academic Year" },
   ];
 
   const handleTabClick = (tabId: number) => {
@@ -268,7 +268,7 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-fit max-w-full md:max-w-[70%] sm:max-w-full sm:min-h-fit">
+          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-fit max-w-full md:max-w-[70%] sm:max-w-[full] sm:min-h-fit">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Viewer</CardTitle>

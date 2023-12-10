@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,6 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DepartmentCombobox } from "./ComboxBox/Department";
 
 export const ByDepartment = () => {
   // const [departmentData, setDepartmentData]
@@ -61,34 +71,62 @@ export const ByDepartment = () => {
     }
   };
 
+  // We will update a list of departments based on what user inputs
+  const [departmentFetchList, setDepartmentFetchList] = useState<string[]>([]);
+
+  const handleDepartmentFetch = async () => {
+    try {
+      // Add the query param departmentID to the URL
+      const url = `/api/department`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        return;
+      }
+
+      // Assuming the server returns a JSON response
+      const responseData = await response.json();
+
+      // Concat the responseData.data (DeptID - DeptName) to the departmentFetchList
+      const concatResult = responseData.data.map((row: any) => row.join(" - "));
+      setDepartmentFetchList(concatResult);
+    } catch (error) {
+      console.error(`Error`, error);
+    }
+  };
+
+  useEffect(() => {
+    handleDepartmentFetch();
+  }, []);
+
   return (
     <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
       <div className="w-[80%] max-w-[80%] flex flex-row space-x-5 p-1">
-        <Input
-          placeholder={`Enter the department id to access ${activeQuery === "Program" ? "program" : "faculty"
-            } data.`}
-          onChange={(e) => {
-            setDepartmentID(e.target.value);
-          }}
+        <DepartmentCombobox
+          departmentFetchList={departmentFetchList}
+          departmentID={departmentID}
+          setDepartmentID={setDepartmentID}
         />
         <Button onClick={handleSearch}>Search</Button>
       </div>
       <div className="flex space-x-4">
         <Button
           onClick={() => setActiveQuery("Program")}
-          className={`px-4 py-2 hover:text-white ${activeQuery === "Program"
+          className={`px-4 py-2 hover:text-white ${
+            activeQuery === "Program"
               ? "bg-primary text-white"
               : "bg-gray-200 text-gray-700"
-            } rounded`}
+          } rounded`}
         >
           Program
         </Button>
         <Button
           onClick={() => setActiveQuery("Faculty")}
-          className={`px-4 py-2 hover:text-white  ${activeQuery === "Faculty"
+          className={`px-4 py-2 hover:text-white  ${
+            activeQuery === "Faculty"
               ? "bg-primary text-white"
               : "bg-gray-200 text-gray-700"
-            } rounded`}
+          } rounded`}
         >
           Faculty
         </Button>

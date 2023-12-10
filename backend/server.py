@@ -735,9 +735,10 @@ def list_courses_by_program(program_name):
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
     JOIN Objectives O ON CO.ObjCode = O.ObjCode
     LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
-    WHERE C.DeptID = (SELECT DeptID FROM Program WHERE ProgName = %s)
+    WHERE C.DeptID IN (SELECT DeptID FROM Program WHERE ProgName = %s)
     ORDER BY C.Title, S.Year;
     """
+    # Converted WHERE C.DeptID = into C.DeptID IN so that it can get multiple department if same Program name
     params = (program_name,)
     return help_functions.execute_query(connection, query, params)
 
@@ -746,8 +747,11 @@ def list_objectives_by_program(program_name):
     query = """
     SELECT O.ObjCode, O.Description, O.DeptID
     FROM Objectives O
-    JOIN Program P ON P.ProgName = O.ProgName
-    WHERE O.ProgName = %s;
+    WHERE O.ProgID IN (
+        SELECT P.ProgID 
+        FROM Program P 
+        WHERE P.ProgName = %s
+    );
     """
     params = (program_name,)
     return help_functions.execute_query(connection, query, params)
@@ -930,10 +934,18 @@ async def get_faculty():
 
 
 @router.get("/department")
-async def get_department():
+async def get_department(deptId: str = None):
     try:
         cursor = connection.cursor()
-        cursor.execute(f"SELECT DeptID, DeptName FROM Department")
+        query = "SELECT DeptID, DeptName FROM Department"
+
+        # Modify the query based on the presence of deptId
+        if deptId is not None:
+            query += " WHERE DeptID = %s"
+            cursor.execute(query, (deptId,))
+        else:
+            cursor.execute(query)
+
         data = cursor.fetchall()
         columns = [column[0] for column in cursor.description]
         return {"columns": columns, "data": data, "statusCode": 200}

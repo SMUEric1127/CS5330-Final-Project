@@ -54,8 +54,8 @@ export const ByProgramAndSemester = () => {
   };
 
   return (
-    <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
-      <div className="w-full flex flex-row space-x-5 p-1">
+    <div className="flex items-center flex-col space-y-5 max-h-[60vh] min-h-fit">
+      <div className="flex flex-row space-x-5 p-1">
         <Input
           placeholder="Enter the program name"
           onChange={(e) => {
@@ -70,6 +70,7 @@ export const ByProgramAndSemester = () => {
         />
         <Input
           placeholder="Enter the year"
+          type="number"
           onChange={(e) => {
             setYear(Number(e.target.value));
           }}
@@ -77,9 +78,16 @@ export const ByProgramAndSemester = () => {
         <Button onClick={handleSearch}>Search</Button>
       </div>
       <Table>
-        {/* <TableCaption>
-          Evaluations for {programName}, {semester} {year}.
-        </TableCaption> */}
+        <TableCaption>
+          {programName && semester && year && (
+            <p>
+              Evaluations for {programName}, {semester} {year}.
+            </p>
+          )}
+          {(!programName || !semester || !year) && (
+            <p>Please enter information above to search for evaluations</p>
+          )}
+        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[20px]">Index</TableHead>
