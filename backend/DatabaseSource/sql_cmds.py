@@ -1,12 +1,12 @@
 create_department_table = """
-CREATE TABLE department(
+CREATE TABLE Department(
 DeptName VARCHAR(40) PRIMARY KEY,
 DeptID VARCHAR(4) UNIQUE NOT NULL
 )
 """
 
 create_faculty_table = """
-CREATE TABLE faculty(
+CREATE TABLE Faculty(
 FacultyID CHAR(8) PRIMARY KEY,
 Name VARCHAR(40) NOT NULL,
 Email VARCHAR(40) UNIQUE NOT NULL,
@@ -17,13 +17,13 @@ FOREIGN KEY (DeptID) REFERENCES Department(DeptID)
 """
 
 create_program_table = """
-CREATE TABLE program(
+CREATE TABLE Program(
+ProgID VARCHAR(10) PRIMARY KEY,
 ProgName VARCHAR(50) NOT NULL,
 DeptID VARCHAR(4) NOT NULL,
 FacultyLead VARCHAR(40) NOT NULL,
 FacultyLeadID VARCHAR(8) NOT NULL,
 FacultyLeadEmail VARCHAR(40) NOT NULL,
-PRIMARY KEY (ProgName, DeptID),
 FOREIGN KEY (DeptID) REFERENCES Department(DeptID),
 FOREIGN KEY (FacultyLeadID) REFERENCES Faculty(FacultyID),
 FOREIGN KEY (FacultyLeadEmail) REFERENCES Faculty(Email)
@@ -31,7 +31,7 @@ FOREIGN KEY (FacultyLeadEmail) REFERENCES Faculty(Email)
 """
 
 create_course_table = """
-CREATE TABLE course(
+CREATE TABLE Course(
 CourseID VARCHAR(8) PRIMARY KEY,
 Title VARCHAR(80) NOT NULL,
 Description TEXT,
@@ -41,7 +41,7 @@ FOREIGN KEY (DeptID) REFERENCES Department(DeptID)
 """
 
 create_section_table = """
-CREATE TABLE section(
+CREATE TABLE Section(
 SecID CHAR(3) NOT NULL,
 CourseID VARCHAR(8) NOT NULL,
 Semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
@@ -54,32 +54,42 @@ FOREIGN KEY (FacultyLeadID) REFERENCES Faculty(FacultyID)
 )
 """
 
+
+create_program_courses_table = """
+CREATE TABLE ProgramCourses(
+ProgID VARCHAR(10) NOT NULL,
+CourseID VARCHAR(8) NOT NULL,
+PRIMARY KEY (ProgID, CourseID),
+FOREIGN KEY (ProgID) REFERENCES Program(ProgID),
+FOREIGN KEY (CourseID) REFERENCES Course(CourseID)
+)
+"""
+
 create_objectives_table = """
-CREATE TABLE objectives(
-ObjCode VARCHAR(24) NOT NULL,
+CREATE TABLE Objectives(
+ObjCode VARCHAR(10) PRIMARY KEY,
 Description TEXT NOT NULL,
-ProgName VARCHAR(50) NOT NULL,
+ProgID VARCHAR(10) NOT NULL,
 DeptID VARCHAR(4) NOT NULL,
-PRIMARY KEY (ObjCode),
 FOREIGN KEY (DeptID) REFERENCES Department(DeptID),
-FOREIGN KEY (ProgName) REFERENCES Program(ProgName)
+FOREIGN KEY (ProgID) REFERENCES Program(ProgID)
 )
 """
 
 create_sub_objectives_table = """
-CREATE TABLE subobjectives(
+CREATE TABLE SubObjectives(
 SubObjCode VARCHAR(12) PRIMARY KEY,
 Description TEXT NOT NULL,
-ObjCode VARCHAR(24) NOT NULL,
+ObjCode VARCHAR(10) NOT NULL,
 FOREIGN KEY (ObjCode) REFERENCES Objectives(ObjCode)
 )
 """
 
 create_course_objectives_table = """
-CREATE TABLE courseobjectives(
-CourseObjID VARCHAR(20) PRIMARY KEY,
+CREATE TABLE CourseObjectives(
+CourseObjID VARCHAR(24) PRIMARY KEY,
 CourseID VARCHAR(8) NOT NULL,
-ObjCode VARCHAR(24) NOT NULL,
+ObjCode VARCHAR(10) NOT NULL,
 SubObjCode VARCHAR(12),
 FOREIGN KEY (CourseID) REFERENCES Course(CourseID),
 FOREIGN KEY (ObjCode) REFERENCES Objectives(ObjCode)
@@ -88,8 +98,8 @@ FOREIGN KEY (ObjCode) REFERENCES Objectives(ObjCode)
 
 
 create_objective_eval_table = """
-CREATE TABLE objectiveeval(
-CourseObjID VARCHAR(20) NOT NULL,
+CREATE TABLE ObjectiveEval(
+CourseObjID VARCHAR(24) NOT NULL,
 SecID CHAR(3) NOT NULL,
 Semester ENUM('Fall', 'Spring', 'Summer') NOT NULL,
 Year YEAR NOT NULL,
@@ -100,21 +110,22 @@ FOREIGN KEY (CourseObjID) REFERENCES CourseObjectives(CourseObjID)
 """
 
 clear_tables = [
-    "TRUNCATE TABLE Program",
-    "TRUNCATE TABLE Department",
-    "TRUNCATE TABLE Faculty",
-    "TRUNCATE TABLE Course",
-    "TRUNCATE TABLE Section",
-    "TRUNCATE TABLE Objectives",
-    "TRUNCATE TABLE SubObjectives",
-    "TRUNCATE TABLE CourseObjectives",
-    "TRUNCATE TABLE ObjectiveEval"
+    "TRUNCATE TABLE Program;",
+    "TRUNCATE TABLE Department;",
+    "TRUNCATE TABLE Faculty;",
+    "TRUNCATE TABLE Course;",
+    "TRUNCATE TABLE Section;",
+    "TRUNCATE TABLE Objectives;",
+    "TRUNCATE TABLE SubObjectives;",
+    "TRUNCATE TABLE CourseObjectives;",
+    "TRUNCATE TABLE ObjectiveEval;",
+    "TRUNCATE TABLE ProgramCourses;"
 ]
 
 count_obj_query = """
 SELECT COUNT(*) AS obj_count
     FROM Objectives 
-    WHERE ProgName = %s
+    WHERE ProgID = %s
     AND DeptID = %s
 """
 
@@ -177,4 +188,29 @@ SELECT EnrollCount
     AND SecID = %s
     AND Semester = %s
     AND Year = %s
+"""
+
+
+get_faculty_info = """
+SELECT Name, Email
+    FROM Faculty
+    WHERE FacultyID = %s
+"""
+
+count_program = """
+SELECT COUNT(*) AS program_count
+    FROM Program
+    WHERE DeptID = %s
+"""
+
+check_program_dept_exists = """
+SELECT COUNT(*) AS program_count
+    FROM Program
+    WHERE ProgID = %s AND DeptID = %s
+"""
+
+check_program_id_exists = """
+SELECT COUNT(*) AS program_count
+    FROM Program
+    WHERE ProgID = %s
 """
