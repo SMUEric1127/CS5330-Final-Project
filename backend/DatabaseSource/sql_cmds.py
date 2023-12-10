@@ -118,7 +118,8 @@ clear_tables = [
     "TRUNCATE TABLE Objectives;",
     "TRUNCATE TABLE SubObjectives;",
     "TRUNCATE TABLE CourseObjectives;",
-    "TRUNCATE TABLE ObjectiveEval;"
+    "TRUNCATE TABLE ObjectiveEval;",
+    "TRUNCATE TABLE ProgramCourses;"
 ]
 
 count_obj_query = """

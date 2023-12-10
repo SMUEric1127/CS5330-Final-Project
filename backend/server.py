@@ -69,6 +69,7 @@ async def create_tables():
             'program': sql_cmds.create_program_table,
             'course': sql_cmds.create_course_table,
             'section': sql_cmds.create_section_table,
+            'programcourses': sql_cmds.create_program_courses_table,
             'objectives': sql_cmds.create_objectives_table,
             'subobjectives': sql_cmds.create_sub_objectives_table,
             'courseobjectives': sql_cmds.create_course_objectives_table,
@@ -258,34 +259,39 @@ async def add_faculty(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@router.get("/add_program/")
+@app.post("/add_program/")
 async def add_program(
     prog_name: str,
     dept_id: str,
-    lead: str,
-    lead_id: str,
-    lead_email: str
+    leadID: str
 ):
     try:
-        success, message = help_functions.validate_program_input(
-            prog_name, dept_id, lead, lead_id, lead_email)
-        if success:
-            prog_name = prog_name.upper()
+        if help_functions.validate_program_input(prog_name, dept_id, leadID):
+            prog_name = help_functions.replace_ampersand(prog_name)
+            prog_name = help_functions.title_except(prog_name)
             prog_dept = dept_id.upper()
-            lead = lead.title()
-            lead_email = lead_email.lower()
+            program_count = help_functions.select_query(connection, sql_cmds.count_program, (prog_dept,))
 
-            add_program_query = (
-                "INSERT INTO Program (ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) "
-                "VALUES (%s, %s, %s, %s, %s)"
-            )
-            if help_functions.execute_query(
-                    connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email)):
-                return {"message": "Program added successfully", "statusCode": 200}
+            if not program_count:
+                return {"message": "Error getting program count.", "statusCode": 500}
+
+            prog_count = program_count[0]['program_count']
+            progID = f"{prog_dept}P{prog_count + 1}"
+
+            lead_details = help_functions.select_query(connection, sql_cmds.get_faculty_info, (leadID,))
+            if lead_details:
+                lead, leadEmail = lead_details[0]['Name'], lead_details[0]['Email']
+                add_program_query = ("INSERT INTO Program ("
+                                     "ProgID, ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) VALUES ("
+                                     "%s, %s, %s, %s, %s, %s)")
+                help_functions.execute_query(connection, add_program_query, (progID, prog_name, prog_dept, lead, leadID, leadEmail))
+
+                return {"message": "Program added successfully.", "statusCode": 200}
             else:
-                return {"message": "Something wrong happened", "statusCode": 500}
+                return {"message": f"Faculty with ID {leadID} does not exist.", "statusCode": 500}
         else:
-            return {"message": f"Program not added: {message}", "statusCode": 500}
+            return {"message": "Program not added: Invalid input.", "statusCode": 500}
+
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -359,26 +365,55 @@ async def add_section(
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
+# Assign a Course to Program
+@app.post("/assign_program_course/")
+async def assign_program_course(
+    progID: str,
+    courseID: str
+):
+    try:
+        if help_functions.validate_prog_course_input(progID, courseID):
+            progID = progID.upper()
+            courseID = courseID.upper()
+            
+            check_program = help_functions.select_query(connection, sql_cmds.check_program_id_exists, (progID,))
+            if not check_program or check_program[0]['program_count'] == 0:
+                return {"message": f"Program ID {progID} does not exist. Program course not added: please enter valid program id.", "statusCode": 500}
+
+            check_course = help_functions.select_query(connection, sql_cmds.check_course_exists, (courseID,))
+            if not check_course or check_course[0]['course_count'] == 0:
+                return {"message": f"Course ID {courseID} does not exist. Program course not added: please enter valid course id.", "statusCode": 500}
+
+            add_prog_course_query = "INSERT INTO ProgramCourses (ProgID, CourseID) VALUES (%s, %s)"
+            help_functions.execute_query(connection, add_prog_course_query, (progID, courseID))
+
+            return {"message": "Program course added successfully.", "statusCode": 200}
+        else:
+            return {"message": "Program course not added: Invalid input.", "statusCode": 500}
+
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
+
 
 @router.get("/add_objective/")
 async def add_objective(
     description: str,
-    prog: str,
+    progID: str,
     dept_id: str,
     obj_code: str | None = None,
 ):
     try:
         message, success = help_functions.validate_objective_input(
-            obj_code, description, prog, dept_id)
+            obj_code, description, progID, dept_id)
         if success:
             # obj_code = obj_code.upper()
-            prog = prog.upper()
+            progID = progID.upper()
 
             checks_passed = True
             result = help_functions.select_query(
-                connection, sql_cmds.count_obj_query, (prog, dept_id))
+                connection, sql_cmds.count_obj_query, (progID, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{prog}{dept_id}{count + 1}"
+            next_obj_code = f"{progID}{dept_id}{count + 1}"
 
             if obj_code and obj_code != next_obj_code:
                 return {
@@ -392,12 +427,12 @@ async def add_objective(
 
             if checks_passed:
                 add_objective_query = (
-                    "INSERT INTO Objectives (ObjCode, Description, ProgName, DeptID) "
+                    "INSERT INTO Objectives (ObjCode, Description, ProgID, DeptID) "
                     "VALUES (%s, %s, %s, %s)"
                 )
 
                 results = help_functions.execute_query(
-                    connection, add_objective_query, (obj_code, description, prog, dept_id))
+                    connection, add_objective_query, (obj_code, description, progID, dept_id))
                 if results:
                     return {"message": "Objective added successfully", "statusCode": 200}
                 else:
