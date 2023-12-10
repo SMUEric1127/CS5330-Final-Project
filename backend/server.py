@@ -49,7 +49,7 @@ class AcademicYearQuery(BaseModel):
     start_year: int
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     # Get something simple without any params
     return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
@@ -259,7 +259,7 @@ async def add_faculty(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@app.post("/add_program/")
+@router.post("/add_program/")
 async def add_program(
     prog_name: str,
     dept_id: str,
@@ -366,7 +366,7 @@ async def add_section(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 # Assign a Course to Program
-@app.post("/assign_program_course/")
+@router.post("/assign_program_course/")
 async def assign_program_course(
     progID: str,
     courseID: str
