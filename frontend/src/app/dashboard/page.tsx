@@ -165,8 +165,8 @@ export default function Home() {
   return (
     <div className="min-h-fit w-screen">
       <NavigationMain />
-      <div className="w-max[90vw] px-10 h-full items-center justify-center">
-        <div className="flex md:space-x-10 min-h-screen flex-col md:flex-row sm:h-fit">
+      <div className="w-max[90vw] px-10 h-fit items-center justify-center">
+        <div className="flex md:space-x-10 min-h-fit flex-col md:flex-row sm:h-fit">
           <div className="flex-2 w-full md:max-w-[30%] sm:w-full pt-10 pb-5 md:py-20 max-h-[80vh]">
             <Card className="min-h-fit md:min-h-[70vh]">
               <CardHeader>
@@ -268,7 +268,7 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-screen max-w-full md:max-w-[70%] sm:max-w-full sm:min-h-fit">
+          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-fit max-w-full md:max-w-[70%] sm:max-w-full sm:min-h-fit">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Viewer</CardTitle>

@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-background">
       <head>
         <link rel="icon" href="/icon.png" />
       </head>
@@ -29,7 +29,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="bg-background text-foreground overflow-x-hidden">
+          <div className="text-foreground overflow-x-hidden">
             {children}
             <Toaster />
           </div>

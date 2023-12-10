@@ -1,6 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PopupComponent } from "@/components/core/PopupComponent";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -64,37 +72,195 @@ export const AssignCourseObjective = () => {
     }
   }
 
+  const [courseData, setCourseData] = React.useState([]);
+  const [courseObjectiveData, setCourseObjectiveData] = React.useState([]);
+  const [courseSubObjectiveData, setCourseSubObjectiveData] = React.useState(
+    []
+  );
+
+  useEffect(() => {
+    const fetchCourse = () => {
+      // Get the course, which got the id, name, email
+      fetch("/api/course", {
+        method: "GET",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // The data will be [[ID, Name, Email]] concat into string with - as separator
+          setCourseData(data.data.map((row: any) => row.join(" - ")));
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+    const fetchCourseObjective = () => {
+      // Get the course, which got the id, name, email
+      fetch("/api/objective", {
+        method: "GET",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // The data will be [[ID, Name, Email]] concat into string with - as separator
+          setCourseObjectiveData(data.data.map((row: any) => row.join(" - ")));
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+
+    fetchCourseObjective();
+    fetchCourse();
+  }, []);
+
+  const fetchCourseSubObjective = (obj_code: string) => {
+    // get the sub_objective by obj_code with the query param is obj_code
+    fetch(`/api/sub_objective?obj_code=${obj_code}`, {
+      method: "GET",
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setCourseSubObjectiveData(data.data.map((row: any) => row.join(" - ")));
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
+
+  const handleChangeCourse = (e: any) => {
+    e = e.split("-")[0].replaceAll(" ", "");
+    setAssignCourseObjectiveData((prevData: any) => ({
+      ...prevData,
+      courseID: e,
+    }));
+  };
+
+  const handleChangeObjective = (e: any) => {
+    e = e.split("-")[0].replaceAll(" ", "");
+    setAssignCourseObjectiveData((prevData: any) => ({
+      ...prevData,
+      objCode: e,
+    }));
+
+    fetchCourseSubObjective(e);
+  };
+
+  const handleChangeSubObjective = (e: any) => {
+    e = e.split("-")[0].replaceAll(" ", "");
+    setAssignCourseObjectiveData((prevData: any) => ({
+      ...prevData,
+      subObjCode: e,
+    }));
+  };
+
   return (
     <div className="flex flex-col space-y-5">
       <div className="flex flex-row space-x-5">
-        <Input
+        {/* <Input
           name="courseID"
           type="text"
           placeholder="Course ID"
           onChange={handleChange}
           value={assignCourseObjectiveData.courseID || ""}
-        />
-        <Input
+        /> Conver to Select */}
+
+        <Select name="courseID" onValueChange={handleChangeCourse}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a Course" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Course ID</SelectLabel>
+              {courseData.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        {/* <Input
           name="objCode"
           type="text"
           placeholder="Objective Code"
           onChange={handleChange}
           value={assignCourseObjectiveData.objCode || ""}
-        />
-        <Input
+        /> */}
+        <Select name="objCode" onValueChange={handleChangeObjective}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select an Objective" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Objective Code</SelectLabel>
+              {courseObjectiveData.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        {/* <Input
           name="subObjCode"
           type="text"
           placeholder="Sub-Objective Code"
           onChange={handleChange}
           value={assignCourseObjectiveData.subObjCode || ""}
-        />
-        <Input
+        /> */}
+
+        <Select
+          name="subObjCode"
+          onValueChange={handleChangeSubObjective}
+          disabled={courseSubObjectiveData.length == 0 ? true : false}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a Sub-Objective" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Sub-Objective Code</SelectLabel>
+              {courseSubObjectiveData.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        {/* <Input
           name="populate"
           type="text"
           placeholder="Populate (Yes/No)"
           onChange={handleChange}
           value={assignCourseObjectiveData.populate || ""}
-        />
+        /> */}
+        <Select
+          name="populate"
+          onValueChange={(value) => {
+            setAssignCourseObjectiveData((prevData: any) => ({
+              ...prevData,
+              populate: value,
+            }));
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select an populate option" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Populate</SelectLabel>
+              <SelectItem key="Yes" value="Yes">
+                Yes
+              </SelectItem>
+              <SelectItem key="No" value="No">
+                No
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       <div className="w-fit mx-auto">
         <PopupComponent

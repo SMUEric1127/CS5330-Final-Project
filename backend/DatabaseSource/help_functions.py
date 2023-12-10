@@ -128,10 +128,10 @@ def validate_program_input(p_name, p_dept, l_id):
 
 
 def validate_dept_input(d_name, d_code):
-    if not re.match(r"^[A-Za-z]{1,40}$", d_name):
+    if not re.match(r"^[A-Za-z ]{1,40}$", d_name):
         return (f"Invalid department name, must contain only characters: {d_name}"), False
     if not re.match(r"^[A-Za-z]{1,4}$", d_code):
-        return (f"Invalid department code: {d_code}"), False
+        return (f"Invalid department code: {d_code}, maximum 4 characters"), False
     return "Success", True
 
 
@@ -243,23 +243,25 @@ def validate_course_obj_input(c_id, o_code, s_code, populate):
     if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}$", c_id):
         print(f"Invalid course ID: {c_id}")
         return f"Invalid course ID: {c_id}", False
-    if not re.match(r"^[A-Za-z]{1,5}[0-9]{1,2}[A-Za-z]{1,2}[0-9]{1,2}$", o_code):
+    if " " in o_code:
+        print(f"Invalid objective code: {o_code}")
+        return f"Invalid objective code: {o_code}, remove any space", False
+    if not re.match(r"^[A-Za-z0-9]+$", o_code):
+        print(f"Invalid objective code: {o_code}")
+        return f"Invalid objective code: {o_code}, remove special character", False
+    if not re.match(r"^[A-Za-z]{1,10}[0-9]{1,5}[A-Za-z]{1,10}[0-9]{1,5}$", o_code):
         print(f"Invalid objective code: {o_code}")
         return f"Invalid objective code: {o_code}", False
-    if s_code:
-        if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}\.[0-9]{1,2}$", s_code):
-            print(f"Invalid sub-objective code: {s_code}")
-            return f"Invalid sub-objective code: {s_code}", False
-    if populate and not re.match(r"^(Yes|No)$", populate, re.IGNORECASE):
+    if populate and not re.match(r"^(Yes|No|yes|no)$", populate, re.IGNORECASE):
         print(f"Invalid populate: {populate}")
         return f"Invalid populate: {populate}", False
     return "Success", True
 
 
 def validate_obj_eval_input(course_obj_id, s_id, sem, yr, eval, pass_count):
-    if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}\.[A-Za-z]{1,8}[0-9]{1,2}(\.[0-9]{1,2})?$", course_obj_id):
-        print(f"Invalid course ID: {course_obj_id}")
-        return f"Invalid course ID: {course_obj_id}", False
+    # if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}\.[A-Za-z]{1,8}[0-9]{1,2}(\.[0-9]{1,2})?$", course_obj_id):
+    #     print(f"Invalid course ID: {course_obj_id}")
+    #     return f"Invalid course ID: {course_obj_id}", False
     if not re.match(r"^[0-9]{3}$", s_id):
         print(f"Invalid section ID: {s_id}")
         return f"Invalid section ID: {s_id}", False

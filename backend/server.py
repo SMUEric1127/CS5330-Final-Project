@@ -110,7 +110,7 @@ async def delete_table(table_name: str):
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
         help_functions.execute_query(connection, f_key_off)
 
-        table_name = table_name.lower()
+        # table_name = table_name.lower()
         valid_tables = help_functions.valid_tables(connection)
 
         if table_name not in valid_tables:
@@ -207,7 +207,7 @@ async def populate_data():
 @router.get("/add_department/")
 async def add_department(dept_name: str, dept_code: str):
     try:
-        success, message = help_functions.validate_dept_input(
+        message, success = help_functions.validate_dept_input(
             dept_name, dept_code)
         if success:
             dept_name = help_functions.replace_ampersand(dept_name)
@@ -593,7 +593,7 @@ async def add_objective_evaluation(input_data: ObjectiveEvalInput):
             section_exists = help_functions.select_query(
                 connection, sql_cmds.check_section_exists, (courseID, secID, semester, year))
             if not section_exists or section_exists[0]['section_count'] == 0:
-                return {"message": f"Section ID {secID} does not exist. Objective evaluation not added.", "statusCode": 500}
+                return {"message": f"The data you entered does not exist. Objective evaluation not added.", "statusCode": 500}
 
             student_count = help_functions.select_query(
                 connection, sql_cmds.get_student_count, (courseID, secID, semester, year))
@@ -608,7 +608,7 @@ async def add_objective_evaluation(input_data: ObjectiveEvalInput):
                     connection, add_obj_eval, (courseObjID, secID, semester, year, evalMethod, studentsPassed)):
                 return {"message": "Objective evaluation added successfully.", "statusCode": 200}
             else:
-                return {"message": "Objective evaluation not added!", "statusCode": 500}
+                return {"message": f"Objective evaluation not added! Error: {message}", "statusCode": 500}
         else:
             return {"message": "Objective evaluation not added!", "statusCode": 500}
 
@@ -969,7 +969,49 @@ async def get_course():
 async def get_objective():
     try:
         cursor = connection.cursor()
-        cursor.execute(f"SELECT ObjCode FROM Objectives")
+        cursor.execute(f"SELECT ObjCode, Description FROM Objectives")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/sub_objective")
+async def get_subobjective_by_obj_code(obj_code: str):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            f"SELECT SubObjCode, Description FROM SubObjectives WHERE ObjCode = %s", (obj_code,))
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/course_objective")
+async def get_courseobjective():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT CourseObjID FROM CourseObjectives")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SectionQuery(BaseModel):
+    course_id: str
+
+
+@router.post("/section")
+async def get_section_by_course_id(query: SectionQuery):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            f"SELECT DISTINCT SecID FROM Section WHERE CourseID = %s", (query.course_id,))
         data = cursor.fetchall()
         columns = [column[0] for column in cursor.description]
         return {"columns": columns, "data": data, "statusCode": 200}

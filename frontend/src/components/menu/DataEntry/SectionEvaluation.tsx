@@ -1,7 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { PopupComponent } from "@/components/core/PopupComponent";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const SectionEvaluation = () => {
   const { toast } = useToast();
@@ -13,6 +22,16 @@ export const SectionEvaluation = () => {
     evalMethod: "",
     studentsPassed: "",
   });
+  const evaluationMethod = [
+    "Exam",
+    "Project",
+    "Assignment",
+    "Interview",
+    "Presentation",
+  ];
+  const semester = ["Fall", "Spring", "Summer"];
+  const [courseObjID, setCourseObjID] = useState([]);
+  const [section, setSection] = useState([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -68,30 +87,132 @@ export const SectionEvaluation = () => {
     }
   }
 
+  const handleChangeCourseObjID = async (e: any) => {
+    const name = "courseObjID";
+    e = e.split("-")[0].replaceAll(" ", "");
+    setEvaluateObjectiveData((prevData: any) => ({
+      ...prevData,
+      [name]: e,
+    }));
+
+    // Need to fetch the section based on the courseObjID
+    // Split the course from courseObjID by the first element before the .
+    const course_id = e.split(".")[0];
+    await fetch("/api/section", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ course_id: course_id }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setSection(data.data.map((row: any) => row.join(" - ")));
+      });
+  };
+
+  const handleSelectChangeCourse = (e: any) => {
+    e = e.split("-")[0].replaceAll(" ", "");
+    setEvaluateObjectiveData((prevData: any) => ({
+      ...prevData,
+      courseID: e,
+    }));
+  };
+
+  const handleSelectChangeSection = (e: any) => {
+    e = e.split("-")[0].replaceAll(" ", "");
+    setEvaluateObjectiveData((prevData: any) => ({
+      ...prevData,
+      secID: e,
+    }));
+  };
+
+  useEffect(() => {
+    const fetchCourseObjID = () => {
+      // Get the objective, which got the id, name, email
+      fetch("/api/course_objective", {
+        method: "GET",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // The data will be [[ID, Name, Email]] concat into string with - as separator
+          setCourseObjID(data.data.map((row: any) => row.join(" - ")));
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+    fetchCourseObjID();
+  }, []);
+
   return (
     <div className="flex flex-col space-y-5">
       <div className="flex flex-row space-x-5">
-        <Input
-          name="courseObjID"
-          type="text"
-          placeholder="Course Objective ID"
-          onChange={handleChange}
-          value={evaluateObjectiveData.courseObjID || ""}
-        />
-        <Input
+        <Select name="courseObjID" onValueChange={handleChangeCourseObjID}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a Course Objective" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Course Objective</SelectLabel>
+              {courseObjID.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Select
           name="secID"
-          type="text"
-          placeholder="Section ID"
-          onChange={handleChange}
-          value={evaluateObjectiveData.secID || ""}
-        />
-        <Input
+          onValueChange={handleSelectChangeSection}
+          disabled={section.length == 0 ? true : false}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={"Select a Section"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Section</SelectLabel>
+              {section.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Select
           name="semester"
-          type="text"
-          placeholder="Semester"
-          onChange={handleChange}
-          value={evaluateObjectiveData.semester || ""}
-        />
+          onValueChange={(value: any) => {
+            setEvaluateObjectiveData((prevData: any) => ({
+              ...prevData,
+              ["semester"]: value,
+            }));
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a Semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Semester</SelectLabel>
+              {semester.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex flex-row space-x-5">
         <Input
@@ -101,16 +222,32 @@ export const SectionEvaluation = () => {
           onChange={handleChange}
           value={evaluateObjectiveData.year || ""}
         />
-        <Input
+        <Select
           name="evalMethod"
-          type="text"
-          placeholder="Evaluation Method"
-          onChange={handleChange}
-          value={evaluateObjectiveData.evalMethod || ""}
-        />
+          onValueChange={(value: any) => {
+            setEvaluateObjectiveData((prevData: any) => ({
+              ...prevData,
+              ["evalMethod"]: value,
+            }));
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select an Evaluation Method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Evaluation Method</SelectLabel>
+              {evaluationMethod.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input
           name="studentsPassed"
-          type="text"
+          type="number"
           placeholder="Students Passed"
           onChange={handleChange}
           value={evaluateObjectiveData.studentsPassed || ""}
