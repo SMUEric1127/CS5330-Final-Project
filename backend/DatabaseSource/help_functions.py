@@ -25,16 +25,19 @@ def connect_database(host_name, user_name, user_password, db_name):
                 print("MySQL Database connection successful")
                 return connection
         except Error as err:
-            connection = mysql.connector.connect(
-                host=host_name,
-                user=user_name,
-                passwd=user_password,
-                database=db_name,
-                connection_timeout=10
-            )
-            if connection.is_connected():
-                print("MySQL Database connection successful")
-                return connection
+            try:
+                connection = mysql.connector.connect(
+                    host="mysql_db",
+                    user=user_name,
+                    passwd=user_password,
+                    database=db_name,
+                    connection_timeout=10
+                )
+                if connection.is_connected():
+                    print("MySQL Database connection successful")
+                    return connection
+            except Error as err:
+                pass
             print("Cannot connect to " + host_name)
             print("Retrying in 5 seconds...")
             time.sleep(5)
