@@ -65,9 +65,8 @@ export const ByDepartment = () => {
     <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
       <div className="w-[80%] max-w-[80%] flex flex-row space-x-5 p-1">
         <Input
-          placeholder={`Enter the department id to access ${
-            activeQuery === "Program" ? "program" : "faculty"
-          } data.`}
+          placeholder={`Enter the department id to access ${activeQuery === "Program" ? "program" : "faculty"
+            } data.`}
           onChange={(e) => {
             setDepartmentID(e.target.value);
           }}
@@ -77,21 +76,19 @@ export const ByDepartment = () => {
       <div className="flex space-x-4">
         <Button
           onClick={() => setActiveQuery("Program")}
-          className={`px-4 py-2 hover:text-white ${
-            activeQuery === "Program"
+          className={`px-4 py-2 hover:text-white ${activeQuery === "Program"
               ? "bg-primary text-white"
               : "bg-gray-200 text-gray-700"
-          } rounded`}
+            } rounded`}
         >
           Program
         </Button>
         <Button
           onClick={() => setActiveQuery("Faculty")}
-          className={`px-4 py-2 hover:text-white  ${
-            activeQuery === "Faculty"
+          className={`px-4 py-2 hover:text-white  ${activeQuery === "Faculty"
               ? "bg-primary text-white"
               : "bg-gray-200 text-gray-700"
-          } rounded`}
+            } rounded`}
         >
           Faculty
         </Button>
@@ -108,6 +105,9 @@ export const ByDepartment = () => {
               <TableHead className="w-[20px]">Index</TableHead>
               <TableHead className=" max-w-xl">Department ID</TableHead>
               <TableHead>Program</TableHead>
+              <TableHead>Faculty Lead</TableHead>
+              <TableHead>Faculty Lead ID</TableHead>
+              <TableHead>Faculty Lead Email</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,6 +116,9 @@ export const ByDepartment = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{data[0]}</TableCell>
                 <TableCell>{data[1]}</TableCell>
+                <TableCell>{data[2]}</TableCell>
+                <TableCell>{data[3]}</TableCell>
+                <TableCell>{data[4]}</TableCell>
               </TableRow>
             ))}
           </TableBody>

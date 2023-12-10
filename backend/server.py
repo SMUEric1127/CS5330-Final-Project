@@ -1,15 +1,16 @@
 import uvicorn
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
-from DatabaseProject import help_functions, sql_cmds
+from DatabaseSource import help_functions, sql_cmds
 import re
 import pandas as pd
-from database_source.query import exampleQuery, exampleQueryParam
 import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from router import APIRouter
 
 app = FastAPI()
+router = APIRouter()
 
 origins = ["*"]
 
@@ -21,10 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.back-env')
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 print(dotenv_path)
 
+connection = None
 connection = help_functions.connect_database(
     os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
 
@@ -50,13 +52,14 @@ class AcademicYearQuery(BaseModel):
 @app.get("/")
 async def root():
     # Get something simple without any params
-    return {"statusCode": 200, "result": exampleQuery()}
+    return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
 
 # Create Tables Function
 
 
-@app.get("/create_tables/")
+@router.get("/create_tables/")
 async def create_tables():
+    print("Create tables!")
     statusCode = 200
     try:
         existing_tables = help_functions.valid_tables(connection)
@@ -99,7 +102,7 @@ async def create_tables():
         return {"message": f"An error occurred: {str(e)}", statusCode: statusCode}
 
 
-@app.get("/clear_specific_table/{table_name}")
+@router.get("/clear_specific_table/{table_name}")
 async def delete_table(table_name: str):
     try:
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
@@ -109,16 +112,18 @@ async def delete_table(table_name: str):
         valid_tables = help_functions.valid_tables(connection)
 
         if table_name not in valid_tables:
-            return {"message": f"Invalid table name: {table_name}"}
+            return {"message": f"Invalid table name: {table_name}", "statusCode": 500}
         else:
             try:
                 delete_table_query = f"DROP TABLE IF EXISTS {table_name}"
                 help_functions.execute_query(connection, delete_table_query)
                 f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
-                help_functions.execute_query(connection, f_key_on)
-                return {"message": f"Table {table_name} successfully deleted"}
+                if help_functions.execute_query(connection, f_key_on):
+                    return {"message": f"Table {table_name} successfully deleted"}
+
+                return {"message": f"Error during drop table ${table_name}", "statusCode": 500}
             except Exception as e:
-                return {"message": f"An error occurred: {str(e)}"}
+                return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
     finally:
         f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
         help_functions.execute_query(connection, f_key_on)
@@ -126,7 +131,7 @@ async def delete_table(table_name: str):
 # Clear All Tables
 
 
-@app.get("/clear_all_tables/")
+@router.get("/clear_all_tables/")
 async def clear_all_tables():
     statusCode = 200
     try:
@@ -143,10 +148,61 @@ async def clear_all_tables():
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": statusCode}
 
+
+@router.get("/drop_all_tables/")
+async def drop_all_tables():
+    try:
+        # Turn off foreign key checks to avoid constraint issues
+        f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
+        help_functions.execute_query(connection, f_key_off)
+
+        # Retrieve a list of all tables in the database
+        all_tables = help_functions.execute_query(connection, "SHOW TABLES")
+
+        # Iterate over the list of tables and drop each one
+        for table in all_tables:
+            drop_table_query = f"DROP TABLE IF EXISTS {table[0]}"
+            if not help_functions.execute_query(connection, drop_table_query):
+                return {"message": "Something wrong happened during dropping tables.", "statusCode": 200}
+
+        # Success message
+        return {"message": "All tables successfully dropped", "statusCode": 200}
+    except Exception as e:
+        # Handle any exceptions during the process
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
+    finally:
+        # Re-enable foreign key checks
+        f_key_on = "SET FOREIGN_KEY_CHECKS = 1"
+        help_functions.execute_query(connection, f_key_on)
+
+
+@router.get("/populate_table")
+async def populate_data():
+    sql_file_path = os.getenv("POPULATE_SQL_FILE")
+    try:
+        # drop all tables first
+        await drop_all_tables()
+
+        # Open and read the SQL file
+        with open(sql_file_path, 'r') as file:
+            sql_commands = file.read().split(';')
+
+        # Execute each SQL command
+        for command in sql_commands:
+            # Ignore empty commands
+            if command.strip() != '':
+                if not help_functions.execute_query(connection, command):
+                    return {"message": f"Cannot populate data, something wrong happened!", "statusCode": 500}
+        
+        return {"message": f"Successfully populated all data", "statusCode": 200}
+    except Exception as e:
+        # Handle any exceptions during the process
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
+
 # Add Department
 
 
-@app.get("/add_department/")
+@router.get("/add_department/")
 async def add_department(dept_name: str, dept_code: str):
     try:
         success, message = help_functions.validate_dept_input(
@@ -169,7 +225,7 @@ async def add_department(dept_name: str, dept_code: str):
 # Add Faculty Member
 
 
-@app.get("/add_faculty/")
+@router.get("/add_faculty/")
 async def add_faculty(
     faculty_id: str,
     name: str,
@@ -202,7 +258,7 @@ async def add_faculty(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@app.get("/add_program/")
+@router.get("/add_program/")
 async def add_program(
     prog_name: str,
     dept_id: str,
@@ -236,7 +292,7 @@ async def add_program(
 # Add Course
 
 
-@app.get("/add_course/")
+@router.get("/add_course/")
 async def add_course(
     course_id: str,
     title: str,
@@ -271,7 +327,7 @@ async def add_course(
 # Add a section
 
 
-@app.get("/add_section/")
+@router.get("/add_section/")
 async def add_section(
     sec_id: str,
     course_id: str,
@@ -304,7 +360,7 @@ async def add_section(
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@app.get("/add_objective/")
+@router.get("/add_objective/")
 async def add_objective(
     description: str,
     prog: str,
@@ -354,7 +410,7 @@ async def add_objective(
 # Add Sub Objective
 
 
-@app.get("/add_sub_objective/")
+@router.get("/add_sub_objective/")
 async def add_sub_objective(
     description: str,
     obj_code: str
@@ -396,7 +452,7 @@ async def add_sub_objective(
 # add new course objective
 
 
-@app.get("/add_course_objective/")
+@router.get("/add_course_objective/")
 async def add_course_objective(
     course_id: str,
     obj_code: str,
@@ -471,7 +527,7 @@ class ObjectiveEvalInput(BaseModel):
     studentsPassed: int
 
 
-@app.post("/add_objective_evaluation")
+@router.post("/add_objective_evaluation")
 async def add_objective_evaluation(input_data: ObjectiveEvalInput):
     try:
         secID = input_data.secID.zfill(3)
@@ -517,7 +573,7 @@ async def add_objective_evaluation(input_data: ObjectiveEvalInput):
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
 
-@app.post("/delete_records/")
+@router.post("/delete_records/")
 async def delete_records(
     table: str,
     conditions_input: str
@@ -559,7 +615,7 @@ async def delete_records(
 # update a record in the database with multiple conditions
 
 
-@app.post("/update_record/")
+@router.post("/update_record/")
 async def update_record(
     table: str,
     update_attribute: str,
@@ -599,7 +655,7 @@ async def update_record(
 
 
 def list_programs_by_department(department_id):
-    query = "SELECT DeptID, ProgName FROM Program WHERE DeptID = %s;"
+    query = "SELECT DeptID, ProgName, FacultyLead, FacultyLeadID, FacultyLeadEmail FROM Program WHERE DeptID = %s;"
     params = (department_id,)
     return help_functions.execute_query(connection, query, params)
 
@@ -625,10 +681,12 @@ def list_faculty_by_department(department_id):
 def list_courses_by_program(program_name):
     query = """
     SELECT
+        C.CourseID AS CouseID,
         C.Title AS CourseTitle,
         S.Year,
         O.Description AS ObjectiveDescription,
-        SO.Description AS SubObjectivesDescription
+        SO.Description AS SubObjectivesDescription,
+        C.DeptID
     FROM Course C
     JOIN Section S ON C.CourseID = S.CourseID
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
@@ -643,7 +701,7 @@ def list_courses_by_program(program_name):
 
 def list_objectives_by_program(program_name):
     query = """
-    SELECT O.ObjCode, O.Description
+    SELECT O.ObjCode, O.Description, O.DeptID
     FROM Objectives O
     JOIN Program P ON P.ProgName = O.ProgName
     WHERE O.ProgName = %s;
@@ -724,7 +782,7 @@ def aggregate_evaluations_by_academic_year(start_year):
     return help_functions.execute_query(connection, query, params)
 
 
-@app.post("/list_programs_by_department/")
+@router.post("/list_programs_by_department/")
 async def list_programs_endpoint(query: DepartmentQuery):
     # connect to the database
     try:
@@ -734,7 +792,7 @@ async def list_programs_endpoint(query: DepartmentQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_faculty_by_department/")
+@router.post("/list_faculty_by_department/")
 async def list_faculty_endpoint(query: DepartmentQuery):
     try:
         result = list_faculty_by_department(query.department_id)
@@ -743,7 +801,7 @@ async def list_faculty_endpoint(query: DepartmentQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_courses_by_program/")
+@router.post("/list_courses_by_program/")
 async def list_courses_endpoint(query: ProgramQuery):
     try:
         result = list_courses_by_program(query.program_name.upper())
@@ -752,7 +810,7 @@ async def list_courses_endpoint(query: ProgramQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_objectives_by_program/")
+@router.post("/list_objectives_by_program/")
 async def list_objectives_endpoint(query: ProgramQuery):
     try:
         result = list_objectives_by_program(query.program_name.upper())
@@ -761,7 +819,7 @@ async def list_objectives_endpoint(query: ProgramQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_evaluations_by_program_and_semester/")
+@router.post("/list_evaluations_by_program_and_semester/")
 async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
     try:
         result = list_evaluations_by_program_and_semester(
@@ -771,7 +829,7 @@ async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_evaluation_results_by_academic_year/")
+@router.post("/list_evaluation_results_by_academic_year/")
 async def list_evaluation_results_endpoint(query: AcademicYearQuery):
     try:
         result = list_evaluation_results_by_academic_year(query.start_year)
@@ -780,7 +838,7 @@ async def list_evaluation_results_endpoint(query: AcademicYearQuery):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/list_aggregate_results_by_academic_year/")
+@router.post("/list_aggregate_results_by_academic_year/")
 async def list_aggregation_results_endpoint(query: AcademicYearQuery):
     try:
         result = aggregate_evaluations_by_academic_year(query.start_year)
@@ -790,5 +848,33 @@ async def list_aggregation_results_endpoint(query: AcademicYearQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/get_all_tables/")
+async def get_all_tables():
+    try:
+        tables = help_functions.valid_tables(connection)
+        return {"tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class TableName(BaseModel):
+    table_name: str
+
+@router.post("/get_table_data/")
+async def get_table_data(table: TableName):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {table.table_name}")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+app.include_router(router=router)
 if __name__ == "__main__":
+    if connection is None:
+        connection = help_functions.connect_database(
+            os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.include_router(router=router)
