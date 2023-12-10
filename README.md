@@ -46,6 +46,10 @@ On the left hand side there will be all available tables for you to choose and v
 
 # Contributions:
 
-Eric Vu
+Vu, Eric
 
-<Fill in your name here if you want to be on here!>
+Matthews, Christopher
+
+Kucera, Matt
+
+Castellano, Nino
