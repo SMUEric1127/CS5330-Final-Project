@@ -232,7 +232,7 @@ def validate_sub_objective_input(s_desc, o_code):
     return "Success", True
 
 
-def validate_course_obj_input(c_id, o_code, s_code):
+def validate_course_obj_input(c_id, o_code, s_code, populate):
     if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}$", c_id):
         print(f"Invalid course ID: {c_id}")
         return f"Invalid course ID: {c_id}", False
@@ -243,6 +243,9 @@ def validate_course_obj_input(c_id, o_code, s_code):
         if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}\.[0-9]{1,2}$", s_code):
             print(f"Invalid sub-objective code: {s_code}")
             return f"Invalid sub-objective code: {s_code}", False
+    if populate and not re.match(r"^(Yes|No)$", populate, re.IGNORECASE):
+        print(f"Invalid populate: {populate}")
+        return f"Invalid populate: {populate}", False
     return "Success", True
 
 
