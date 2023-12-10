@@ -112,7 +112,7 @@ export const AssignCourseObjective = () => {
               assignCourseObjectiveData.populate
             )}`;
 
-            const successMessage = "Assign objective successfully";
+            const successMessage = "Assign objective successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           title="Are you sure?"

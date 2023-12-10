@@ -123,7 +123,7 @@ export const SectionEvaluation = () => {
               `Evaluating objective with: ${evaluateObjectiveData.courseObjID}, ${evaluateObjectiveData.secID}, ${evaluateObjectiveData.semester}, ${evaluateObjectiveData.year}, ${evaluateObjectiveData.evalMethod}, ${evaluateObjectiveData.studentsPassed}`
             );
             const url = `/api/add_objective_evaluation`;
-            const successMessage = "Assign success";
+            const successMessage = "Add evaluation successfully! 🎉";
             sendQuery(url, evaluateObjectiveData, successMessage);
           }}
           title="Are you sure?"

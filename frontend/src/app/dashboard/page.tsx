@@ -25,6 +25,7 @@ import {
 import { AdminActionMenu } from "@/components/menu/AdminTable/AdminActionMenu";
 import { Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { AssignCourseProgram } from "@/components/menu/DataEntry/AssignCourseProgram";
 
 export default function Home() {
   const [currentOpenTab, setCurrentOpenTab] = useState<string | null>(null);
@@ -47,8 +48,9 @@ export default function Home() {
   const dataEntryTabs = [
     { id: 1, label: "Tables Manipulation" },
     { id: 2, label: "Add Data" },
-    { id: 3, label: "Assign Course Objective" },
-    { id: 4, label: "Section Evaluation Input" },
+    { id: 3, label: "Assign Course - Program" },
+    { id: 4, label: "Assign Course - Objective" },
+    { id: 5, label: "Section Evaluation Input" },
   ];
 
   const dataQueryingTabs = [
@@ -76,8 +78,10 @@ export default function Home() {
         case 2:
           return <AddData />;
         case 3:
-          return <AssignCourseObjective />;
+          return <AssignCourseProgram />;
         case 4:
+          return <AssignCourseObjective />;
+        case 5:
           return <SectionEvaluation />;
         default:
           return null;
@@ -271,10 +275,9 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="max-h-[60vh]">
-                  {(activeTab == 3 || activeTab == 4) &&
-                    currentOpenTab == "entry" && (
-                      <p className="pb-5">Populates the form fields</p>
-                    )}
+                  {activeTab >= 3 && currentOpenTab == "entry" && (
+                    <p className="pb-5">Populates the form fields</p>
+                  )}
                   {(activeTab == 1 || activeTab == 2) &&
                     currentOpenTab == "entry" && (
                       <p className="pb-0">Select List of Actions below</p>
