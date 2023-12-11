@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql_db:3306
--- Generation Time: Dec 10, 2023 at 10:47 AM
--- Server version: 8.0.33
--- PHP Version: 8.2.12
+-- Generation Time: Dec 11, 2023 at 05:42 AM
+-- Server version: 8.2.0
+-- PHP Version: 8.2.13
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -39,9 +39,15 @@ CREATE TABLE `Course` (
 --
 
 INSERT INTO `Course` (`CourseID`, `Title`, `Description`, `DeptID`) VALUES
-('CS1341', 'Java Course', 'Hello World using Java!', 'LYLE'),
-('CS1342', 'C++', 'C++ OOP Course', 'LYLE'),
-('MEAD1000', 'Intro to Music Appreciation', '', 'MEAD');
+('BSKW1000', 'Bskw 1000: Introduction', 'Basic of Basket Weaving', 'BSKW'),
+('BSKW1010', 'Bskw 1010: More Than Just Basic', 'Baskets of the world', 'BSKW'),
+('BSKW2020', 'Bskw 2020: History of Basket Weaving', 'History of Basket Weaving', 'BSKW'),
+('BSKW3000', 'Bskw 3000: Ready to Physics?', 'Newtonian Physics as applied to basket weaving', 'BSKW'),
+('COMP1000', 'Cs 1', 'Computer 1000', 'COMP'),
+('COMP1100', 'Cs 2', 'Computer 1100', 'COMP'),
+('COMP1200', 'Comp1200', 'CS 3', 'COMP'),
+('COMP3000', 'Comp 3000: Algorithm', 'Learn the best algorithms in the world', 'COMP'),
+('CS2000', 'Data Structure', 'Data Structure using C++', 'COMP');
 
 -- --------------------------------------------------------
 
@@ -55,16 +61,6 @@ CREATE TABLE `CourseObjectives` (
   `ObjCode` varchar(128) NOT NULL,
   `SubObjCode` varchar(128) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `CourseObjectives`
---
-
-INSERT INTO `CourseObjectives` (`CourseObjID`, `CourseID`, `ObjCode`, `SubObjCode`) VALUES
-('CS1341.LYLEP1LYLE1.1', 'CS1341', 'LYLEP1LYLE1', 'LYLEP1LYLE1.1'),
-('CS1342.LYLEP1LYLE2', 'CS1342', 'LYLEP1LYLE2', NULL),
-('MEAD1000.LYLEP1LYLE1.1', 'MEAD1000', 'MEADP1MEAD1', 'LYLEP1LYLE1.1'),
-('MEAD1000.MEADP1MEAD1.1', 'MEAD1000', 'MEADP1MEAD1', 'MEADP1MEAD1.1');
 
 -- --------------------------------------------------------
 
@@ -82,8 +78,8 @@ CREATE TABLE `Department` (
 --
 
 INSERT INTO `Department` (`DeptName`, `DeptID`) VALUES
-('Lyle School of Engineering', 'LYLE'),
-('Meadow Department', 'MEAD');
+('Basket Weaving Department', 'BSKW'),
+('Computer Science Department', 'COMP');
 
 -- --------------------------------------------------------
 
@@ -104,9 +100,24 @@ CREATE TABLE `Faculty` (
 --
 
 INSERT INTO `Faculty` (`FacultyID`, `Name`, `Email`, `DeptID`, `Position`) VALUES
-('00001234', 'Meadow Faculty', 'tes23222t@mail.com', 'LYLE', 'Associate'),
-('12341211', 'Alan Turring', 'at@smu.edu', 'LYLE', 'Full'),
-('12341233', 'Meadow Faculty', 'me@smu.edu', 'LYLE', 'Assistant');
+('10000001', 'Alan Turing', 'at@smu.edu', 'COMP', 'Full'),
+('10000002', 'Sarah Davis', 'sdvis@smu.edu', 'COMP', 'Adjunct'),
+('10000003', 'David Clark', 'dvclark@smu.edu', 'COMP', 'Assistant'),
+('10000004', 'Emily White', 'ewhite@smu.edu', 'COMP', 'Associate'),
+('10000005', 'Michael Brown', 'michbrownn@smu.edu', 'COMP', 'Full'),
+('10000006', 'Lisa Johnson', 'lisajohnson@smu.edu', 'COMP', 'Adjunct'),
+('10000007', 'Robert Lee', 'rob_lee@smu.edu', 'COMP', 'Assistant'),
+('10000008', 'Jessica Turner', 'jesstner@smu.edu', 'COMP', 'Associate'),
+('10000009', 'William Taylor', 'witaylor@smu.edu', 'COMP', 'Full'),
+('10000010', 'Jennier Hall', 'jhall@smu.edu', 'COMP', 'Adjunct'),
+('10000011', 'Andrew Adams', 'awdam@smu.edu', 'COMP', 'Assistant'),
+('10000012', 'Oliva Carter', 'olcarter@smu.edu', 'COMP', 'Associate'),
+('10000013', 'Grace Roberts', 'grrrrrrrroar@smu.edu', 'BSKW', 'Full'),
+('10000014', 'Samuel Anderson', 'sason@smu.edu', 'BSKW', 'Adjunct'),
+('10000015', 'Lily Morgan', 'lmgan@smu.edu', 'BSKW', 'Assistant'),
+('10000016', 'Daniel Evans', 'dens@smu.edu', 'BSKW', 'Associate'),
+('10000017', 'Ava Foster', 'affffoster@smu.edu', 'BSKW', 'Full'),
+('10000018', 'Ethan Mitchell', 'emchell@smu.edu', 'BSKW', 'Assistant');
 
 -- --------------------------------------------------------
 
@@ -123,16 +134,6 @@ CREATE TABLE `ObjectiveEval` (
   `StudentsPassed` smallint NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Dumping data for table `ObjectiveEval`
---
-
-INSERT INTO `ObjectiveEval` (`CourseObjID`, `SecID`, `Semester`, `Year`, `EvalMethod`, `StudentsPassed`) VALUES
-('CS1341.LYLEP1LYLE1.1', '001', 'Fall', '2023', 'Exam', 50),
-('CS1341.LYLEP1LYLE1.1', '002', 'Fall', '2023', 'Exam', 25),
-('CS1342.LYLEP1LYLE2', '001', 'Fall', '2023', 'Project', 30),
-('MEAD1000.MEADP1MEAD1.1', '001', 'Fall', '2023', 'Exam', 50);
-
 -- --------------------------------------------------------
 
 --
@@ -145,15 +146,6 @@ CREATE TABLE `Objectives` (
   `ProgID` varchar(10) NOT NULL,
   `DeptID` varchar(4) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `Objectives`
---
-
-INSERT INTO `Objectives` (`ObjCode`, `Description`, `ProgID`, `DeptID`) VALUES
-('LYLEP1LYLE1', 'Basic Java Core', 'LYLEP1', 'LYLE'),
-('LYLEP1LYLE2', 'A very looooooooooong description for a objective', 'LYLEP1', 'LYLE'),
-('MEADP1MEAD1', 'Foundation of Music Appreciation', 'MEADP1', 'MEAD');
 
 -- --------------------------------------------------------
 
@@ -175,9 +167,8 @@ CREATE TABLE `Program` (
 --
 
 INSERT INTO `Program` (`ProgID`, `ProgName`, `DeptID`, `FacultyLead`, `FacultyLeadID`, `FacultyLeadEmail`) VALUES
-('LYLEP1', 'Bs', 'LYLE', 'Alan Turring', '12341211', 'at@smu.edu'),
-('LYLEP2', 'Music Appreciation Bs', 'LYLE', 'Meadow Faculty', '12341233', 'me@smu.edu'),
-('MEADP1', 'Music Appreciation Bs', 'MEAD', 'Meadow Faculty', '00001234', 'tes23222t@mail.com');
+('BSKWP1', 'Ba', 'BSKW', 'Lily Morgan', '10000015', 'lmgan@smu.edu'),
+('COMPP1', 'Bs', 'COMP', 'Alan Turing', '10000001', 'at@smu.edu');
 
 -- --------------------------------------------------------
 
@@ -189,14 +180,6 @@ CREATE TABLE `ProgramCourses` (
   `ProgID` varchar(10) NOT NULL,
   `CourseID` varchar(8) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `ProgramCourses`
---
-
-INSERT INTO `ProgramCourses` (`ProgID`, `CourseID`) VALUES
-('LYLEP1', 'CS1341'),
-('LYLEP1', 'CS1342');
 
 -- --------------------------------------------------------
 
@@ -218,11 +201,30 @@ CREATE TABLE `Section` (
 --
 
 INSERT INTO `Section` (`SecID`, `CourseID`, `Semester`, `Year`, `FacultyLeadID`, `EnrollCount`) VALUES
-('001', 'CS1341', 'Fall', '2023', '12341211', 50),
-('002', 'CS1341', 'Fall', '2023', '12341211', 100),
-('001', 'CS1342', 'Fall', '2023', '12341211', 60),
-('001', 'MEAD1000', 'Fall', '2023', '00001234', 100),
-('001', 'MEAD1000', 'Spring', '2023', '12341211', 100);
+('001', 'BSKW1000', 'Fall', '2023', '10000016', 40),
+('001', 'BSKW1000', 'Spring', '2023', '10000018', 25),
+('001', 'BSKW1000', 'Summer', '2023', '10000018', 15),
+('001', 'BSKW1010', 'Fall', '2023', '10000014', 70),
+('001', 'BSKW1010', 'Spring', '2023', '10000013', 50),
+('001', 'BSKW1010', 'Summer', '2023', '10000018', 30),
+('001', 'BSKW2020', 'Spring', '2023', '10000013', 60),
+('001', 'BSKW3000', 'Fall', '2023', '10000016', 40),
+('001', 'COMP1000', 'Fall', '2023', '10000002', 50),
+('001', 'COMP1000', 'Spring', '2023', '10000002', 30),
+('002', 'COMP1000', 'Fall', '2023', '10000004', 60),
+('002', 'COMP1000', 'Spring', '2023', '10000004', 40),
+('001', 'COMP1100', 'Fall', '2023', '10000004', 70),
+('001', 'COMP1100', 'Spring', '2023', '10000009', 30),
+('002', 'COMP1100', 'Fall', '2023', '10000004', 40),
+('002', 'COMP1100', 'Spring', '2023', '10000008', 50),
+('001', 'COMP1200', 'Fall', '2023', '10000005', 70),
+('001', 'COMP1200', 'Spring', '2023', '10000009', 40),
+('002', 'COMP1200', 'Fall', '2023', '10000008', 90),
+('002', 'COMP1200', 'Spring', '2023', '10000006', 70),
+('001', 'COMP3000', 'Fall', '2023', '10000009', 40),
+('001', 'COMP3000', 'Spring', '2023', '10000001', 40),
+('001', 'CS2000', 'Fall', '2023', '10000011', 30),
+('001', 'CS2000', 'Spring', '2023', '10000003', 40);
 
 -- --------------------------------------------------------
 
@@ -235,15 +237,6 @@ CREATE TABLE `SubObjectives` (
   `Description` text NOT NULL,
   `ObjCode` varchar(128) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `SubObjectives`
---
-
-INSERT INTO `SubObjectives` (`SubObjCode`, `Description`, `ObjCode`) VALUES
-('LYLEP1LYLE1.1', 'Basic Java Functions', 'LYLEP1LYLE1'),
-('LYLEP1LYLE2.1', 'test', 'LYLEP1LYLE2'),
-('MEADP1MEAD1.1', 'Sub 1', 'MEADP1MEAD1');
 
 --
 -- Indexes for dumped tables
