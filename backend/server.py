@@ -54,6 +54,21 @@ async def root():
     # Get something simple without any params
     return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
 
+
+@app.middleware("http")
+async def check_health(request, call_next):
+    global connection
+    if connection is None:
+        print("Please wait until connection is established")
+        return "Please wait until connection is established"
+    print("Check health connections")
+    if not connection.is_connected():
+        connection = help_functions.connect_database(os.getenv("HOST"), os.getenv(
+            "MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+    print("Done check health, next request")
+    response = await call_next(request)
+    return response
+
 # Create Tables Function
 
 
