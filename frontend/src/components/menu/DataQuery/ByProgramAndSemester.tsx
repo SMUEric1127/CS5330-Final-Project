@@ -23,18 +23,13 @@ import {
 import { ProgramCombobox } from "./ComboxBox/Program";
 
 export const ByProgramAndSemester = () => {
-  const [programName, setProgramName] = useState<undefined | string>(undefined);
+  const [programID, setProgramID] = useState<undefined | string>(undefined);
   const [semester, setSemester] = useState<undefined | string>(undefined);
-  const [year, setYear] = useState<undefined | number>(undefined);
   const [evaluations, setEvaluations] = useState([]);
   const semesterList = ["Fall", "Spring", "Summer"];
 
   const handleSearch = async () => {
-    if (
-      programName !== undefined &&
-      semester !== undefined &&
-      year !== undefined
-    ) {
+    if (programID !== undefined && semester !== undefined) {
       try {
         const url = "/api/list_evaluations_by_program_and_semester/";
 
@@ -45,9 +40,8 @@ export const ByProgramAndSemester = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            program_name: programName,
+            program_id: programID,
             semester: semester,
-            year: year,
           }),
         });
 
@@ -98,14 +92,14 @@ export const ByProgramAndSemester = () => {
         {/* <Input
           placeholder="Enter the program name"
           onChange={(e) => {
-            setProgramName(e.target.value);
+            setProgramID(e.target.value);
           }}
         /> */}
-        <div className="min-w-[200px]">
+        <div className="min-w-[200px] pl-30">
           <ProgramCombobox
             programFetchList={programFetchList}
-            programName={programName}
-            setProgramName={setProgramName}
+            programID={programID}
+            setProgramID={setProgramID}
           />
         </div>
         <Select
@@ -114,7 +108,7 @@ export const ByProgramAndSemester = () => {
             setSemester(value);
           }}
         >
-          <SelectTrigger className="min-w-[100px]">
+          <SelectTrigger className="w-[100px]">
             <SelectValue placeholder="Select a Semester" />
           </SelectTrigger>
           <SelectContent>
@@ -128,39 +122,32 @@ export const ByProgramAndSemester = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Input
-          placeholder="Enter the year"
-          type="number"
-          onChange={(e) => {
-            setYear(Number(e.target.value));
-          }}
-        />
         <Button onClick={handleSearch}>Search</Button>
       </div>
       <Table>
         <TableCaption>
-          {programName && semester && year && (
+          {programID && semester && (
             <p>
-              Evaluations for {programName}, {semester} {year}.
+              Evaluations for {programID}, {semester}.
             </p>
           )}
-          {(!programName || !semester || !year) && (
+          {(!programID || !semester) && (
             <p>Please enter information above to search for evaluations</p>
           )}
         </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[20px]">Index</TableHead>
-            <TableHead>Program</TableHead>
-            <TableHead>Department</TableHead>
-            <TableHead>Course Code</TableHead>
-            <TableHead>Course Name</TableHead>
+            {/* SELECT pc.ProgID, c.CourseID, s.SecID, c.Title, oe.Semester,
+            oe.Year, oe.EvalMethod, oe.StudentsPassed */}
+            <TableHead>Program ID</TableHead>
+            <TableHead>Course ID</TableHead>
             <TableHead>Section</TableHead>
-            <TableHead>Student ID</TableHead>
+            <TableHead>Course Title</TableHead>
             <TableHead>Semester</TableHead>
             <TableHead>Year</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Result</TableHead>
+            <TableHead>Evaluation Method</TableHead>
+            <TableHead>Students Passed</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

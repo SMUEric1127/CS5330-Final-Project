@@ -100,20 +100,24 @@ export const ByAcademicYear = () => {
           )}
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[20px]">Index</TableHead>
-              <TableHead>Objective Code</TableHead>
-              <TableHead>Subcode</TableHead>
+              <TableHead>Index</TableHead>
+              <TableHead>Course ID</TableHead>
+              <TableHead>Objective/Sub-Objective ID</TableHead>
+              <TableHead>Section ID</TableHead>
               <TableHead>Semester</TableHead>
               <TableHead>Year</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Result</TableHead>
+              <TableHead>Evaluation Method</TableHead>
+              <TableHead>Students Passed</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {evaluationResults.map((data, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{data[0]}</TableCell>
+                <TableCell>{(data[0] as string).split(".")[0]}</TableCell>
+                <TableCell>
+                  {(data[0] as string).split(".").slice(1).join(".")}
+                </TableCell>
                 <TableCell>{data[1]}</TableCell>
                 <TableCell>{data[2]}</TableCell>
                 <TableCell>{data[3]}</TableCell>
@@ -135,8 +139,7 @@ export const ByAcademicYear = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[20px]">Index</TableHead>
-              <TableHead>Objective Code</TableHead>
-              <TableHead>SubObjective Code</TableHead>
+              <TableHead>Objective/Sub-Objective Code</TableHead>
               <TableHead>Students Passed</TableHead>
               <TableHead>Total Students</TableHead>
               <TableHead>Percentage Passed (%)</TableHead>
@@ -146,11 +149,12 @@ export const ByAcademicYear = () => {
             {aggregatedResults.map((data, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{data[0]}</TableCell>
+                <TableCell>
+                  {(data[0] as string).split(".").slice(1).join(".")}
+                </TableCell>
                 <TableCell>{data[1]}</TableCell>
                 <TableCell>{data[2]}</TableCell>
                 <TableCell>{data[3]}</TableCell>
-                <TableCell>{data[4]} %</TableCell>
               </TableRow>
             ))}
           </TableBody>

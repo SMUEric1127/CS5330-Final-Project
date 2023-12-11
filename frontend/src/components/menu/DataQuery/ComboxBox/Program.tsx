@@ -17,13 +17,17 @@ import {
 
 export function ProgramCombobox({
   programFetchList = ["Computer Science", "Mathematics", "Physics"],
-  programName = "",
-  setProgramName = (dept: any) => {},
+  programID = "",
+  setProgramID = (dept: any) => {},
 }) {
   const [open, setOpen] = React.useState(false);
+  const [selectedDisplayProgram, setSelectedDisplayProgram] = React.useState<
+    undefined | string
+  >(undefined);
 
   const handleSelect = (selectedProgram: any) => {
-    setProgramName(selectedProgram.split(" - ")[0]);
+    setSelectedDisplayProgram(selectedProgram);
+    setProgramID(selectedProgram.split(" - ")[0]);
     setOpen(false);
   };
 
@@ -36,7 +40,7 @@ export function ProgramCombobox({
           aria-expanded={open}
           className="min-w-full justify-between"
         >
-          {programName || "Select Program..."}
+          {selectedDisplayProgram || "Select Program..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -54,7 +58,7 @@ export function ProgramCombobox({
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    programName === data ? "opacity-100" : "opacity-0"
+                    programID === data ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {data}

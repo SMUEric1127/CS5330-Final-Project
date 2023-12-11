@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button";
 import { ProgramCombobox } from "./ComboxBox/Program";
 
 export const ByProgram = () => {
-  const [programName, setProgramName] = useState<undefined | string>(undefined);
+  const [programID, setProgramID] = useState<undefined | string>(undefined);
   const [courses, setCourses] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [activeQuery, setActiveQuery] = useState("Courses");
 
   const handleSearch = async () => {
-    if (programName !== undefined) {
+    if (programID !== undefined) {
       try {
         const url =
           activeQuery === "Courses"
@@ -34,7 +34,7 @@ export const ByProgram = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            program_name: programName,
+            program_id: programID,
           }),
         });
 
@@ -91,13 +91,13 @@ export const ByProgram = () => {
             activeQuery === "Courses" ? "courses" : "objectives"
           } data.`}
           onChange={(e) => {
-            setProgramName(e.target.value);
+            setProgramID(e.target.value);
           }}
         /> */}
         <ProgramCombobox
           programFetchList={programFetchList}
-          programName={programName}
-          setProgramName={setProgramName}
+          programID={programID}
+          setProgramID={setProgramID}
         />
         <Button onClick={handleSearch}>Search</Button>
       </div>
@@ -125,9 +125,9 @@ export const ByProgram = () => {
       </div>
       {activeQuery === "Courses" && (
         <Table>
-          {programName && (
+          {programID && (
             <TableCaption>
-              A list of courses for the program {programName}.
+              A list of courses for the program id {programID}.
             </TableCaption>
           )}
           <TableHeader>
@@ -156,9 +156,9 @@ export const ByProgram = () => {
       )}
       {activeQuery === "Objectives" && (
         <Table>
-          {programName && (
+          {programID && (
             <TableCaption>
-              A list of objectives for the program {programName}.
+              A list of objectives for the program {programID}.
             </TableCaption>
           )}
           <TableHeader>
