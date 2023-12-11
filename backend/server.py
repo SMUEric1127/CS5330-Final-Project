@@ -60,11 +60,15 @@ async def check_health(request, call_next):
     global connection
     if connection is None:
         print("Please wait until connection is established")
-        return "Please wait until connection is established"
+        return {"statusCode": 403, "message": "Please wait until connection is established"}
     print("Check health connections")
     if not connection.is_connected():
         connection = help_functions.connect_database(os.getenv("HOST"), os.getenv(
             "MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+    
+    if not connection.is_connected():
+        print("Cannot connect, return error")
+        return {"statusCode": 500, "message": "Cannot connect to database, please try again"}
     print("Done check health, next request")
     response = await call_next(request)
     return response
