@@ -9,8 +9,8 @@ services:
       MYSQL_USER: cs5330
       MYSQL_PASSWORD: Sql5330!
       MYSQL_DATABASE: dbproj
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "3306:3306"
     volumes:
       - ./database/data:/var/lib/mysql
     networks:
