@@ -37,13 +37,12 @@ class DepartmentQuery(BaseModel):
 
 
 class ProgramQuery(BaseModel):
-    program_name: str
+    program_id: str
 
 
 class ProgramAndSemesterQuery(BaseModel):
-    program_name: str
+    program_id: str
     semester: str
-    year: int
 
 
 class AcademicYearQuery(BaseModel):
@@ -365,7 +364,7 @@ async def add_section(
                     connection, add_section_query, (sec_id, course_id, semester, year, faculty_lead_id, enroll_count)):
                 return {"message": "Section added successfully", "statusCode": 200}
             else:
-                return {"message": "Cannot add course!", "statusCode": 500}
+                return {"message": "Cannot add section!", "statusCode": 500}
         else:
             return {"message": f"Cannot add section: {message}", "statusCode": 500}
     except Exception as e:
@@ -721,17 +720,21 @@ def list_faculty_by_department(department_id):
     return help_functions.execute_query(connection, query, params)
 
 
-def list_courses_by_program(program_name):
+def list_courses_by_program(program_id):
     query = """
     SELECT
-        C.CourseID AS CouseID,
+        DISTINCT C.CourseID AS CourseID,
         C.Title AS CourseTitle,
         S.Year,
         O.Description AS ObjectiveDescription,
         SO.Description AS SubObjectivesDescription,
         C.DeptID
     FROM Course C
-    JOIN Section S ON C.CourseID = S.CourseID
+    JOIN (
+        SELECT CourseID, Year
+        FROM Section
+        GROUP BY CourseID, Year
+    ) AS S ON C.CourseID = S.CourseID
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
     JOIN Objectives O ON CO.ObjCode = O.ObjCode
     LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
@@ -739,67 +742,91 @@ def list_courses_by_program(program_name):
     ORDER BY C.Title, S.Year;
     """
     # Converted WHERE C.DeptID = into C.DeptID IN so that it can get multiple department if same Program name
-    params = (program_name,)
+
+    params = (program_id,)
     return help_functions.execute_query(connection, query, params)
 
 
-def list_objectives_by_program(program_name):
+def list_objectives_by_program(progID):
     query = """
     SELECT O.ObjCode, O.Description, O.DeptID
     FROM Objectives O
     WHERE O.ProgID IN (
         SELECT P.ProgID 
         FROM Program P 
-        WHERE P.ProgName = %s
+        WHERE P.ProgID = %s
     );
     """
-    params = (program_name,)
+    params = (progID,)
     return help_functions.execute_query(connection, query, params)
 
 
-def list_evaluations_by_program_and_semester(program_name, semester, year):
+def list_evaluations_by_program_and_semester(progID, semester):
+    # SELECT
+    #     P.ProgName,
+    #     C.DeptID,
+    #     C.CourseID,
+    #     C.Title AS CourseTitle,
+    #     S.SecID,
+    #     S.FacultyLeadID,
+    #     E.Semester,
+    #     E.Year,
+    #     E.EvalMethod,
+    #     E.StudentsPassed
+    # FROM ObjectiveEval E
+    # JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
+    # JOIN Course C ON S.CourseID = C.CourseID
+    # JOIN Program P ON C.DeptID = P.DeptID
+    # WHERE P.ProgID = %s AND E.Semester = %s AND E.Year = %s;
+
     query = """
-    SELECT
-        P.ProgName,
-        C.DeptID,
-        C.CourseID,
-        C.Title AS CourseTitle,
-        S.SecID,
-        S.FacultyLeadID,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
-    JOIN Course C ON S.CourseID = C.CourseID
-    JOIN Program P ON C.DeptID = P.DeptID
-    WHERE P.ProgID = %s AND E.Semester = %s AND E.Year = %s;
+    SELECT pc.ProgID, c.CourseID, s.SecID, c.Title, oe.Semester, oe.Year, oe.EvalMethod, oe.StudentsPassed
+    FROM Section s
+    JOIN Course c ON s.CourseID = c.CourseID
+    JOIN ProgramCourses pc ON c.CourseID = pc.CourseID
+    LEFT JOIN CourseObjectives co ON c.CourseID = co.CourseID
+    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID AND s.SecID = oe.SecID
+    WHERE pc.ProgID = %s AND oe.Semester = %s
+    ORDER BY c.CourseID, s.SecID;
     """
-    params = (program_name, semester, year)
+    params = (progID, semester)
     return help_functions.execute_query(connection, query, params)
 
 
 def list_evaluation_results_by_academic_year(start_year):
     end_year = start_year + 1
+    # query = """
+    # SELECT
+    #     O.ObjCode AS ObjectiveCode,
+    #     SO.SubObjCode AS SubObjectiveCode,
+    #     E.Semester,
+    #     E.Year,
+    #     E.EvalMethod,
+    #     E.StudentsPassed
+    # FROM ObjectiveEval E
+    # JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
+    # JOIN Objectives O ON CO.ObjCode = O.ObjCode
+    # LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
+    # JOIN Section S ON E.SecID = S.SecID
+    # JOIN Course C on C.CourseID = S.CourseID
+    # WHERE
+    #     (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+    #     (s.Semester = 'Spring' AND s.Year = %s)
+    # ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+    # """
     query = """
-    SELECT
-        O.ObjCode AS ObjectiveCode,
-        SO.SubObjCode AS SubObjectiveCode,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
-    JOIN Objectives O ON CO.ObjCode = O.ObjCode
-    LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
-    JOIN Section S ON E.SecID = S.SecID
-    JOIN Course C on C.CourseID = S.CourseID
-    WHERE
-        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
-        (s.Semester = 'Spring' AND s.Year = %s)
-    ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+    SELECT co.CourseObjID, s.SecID, oe.Semester, oe.Year, oe.EvalMethod, oe.StudentsPassed
+    FROM Objectives o
+    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
+    JOIN CourseObjectives co ON o.ObjCode = co.ObjCode
+    JOIN Course c ON co.CourseID = c.CourseID
+    JOIN Section s ON c.CourseID = s.CourseID
+    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID AND s.SecID = oe.SecID
+    WHERE (s.Year = %s
+    AND s.Semester IN ('Summer', 'Fall'))
+    OR (s.Year = %s
+    AND s.Semester = 'Spring')
+    ORDER BY o.ObjCode, so.SubObjCode, c.CourseID, s.SecID;
     """
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
@@ -809,21 +836,21 @@ def aggregate_evaluations_by_academic_year(start_year):
     end_year = start_year + 1
     query = """
     SELECT
-        o.ObjCode AS ObjectiveCode,
-        so.SubObjCode AS SubObjectiveCode,
-        COALESCE(SUM(oe.StudentsPassed), 0) AS StudentsPassed,
-        COALESCE(SUM(s.EnrollCount), 0) AS TotalStudents,
-        COALESCE(ROUND((SUM(oe.StudentsPassed) / NULLIF(SUM(s.EnrollCount), 0)) * 100, 2), 0) AS PercentagePassed
-    FROM Objectives o
-    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
-    LEFT JOIN CourseObjectives co ON o.ObjCode = co.ObjCode OR so.SubObjCode = co.SubObjCode
-    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
-    LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
+        co.CourseObjID,
+        SUM(oe.StudentsPassed) AS StudentsPassed,
+        SUM(s.EnrollCount) AS TotalEnrolled,
+        (SUM(oe.StudentsPassed) / SUM(s.EnrollCount)) * 100 AS PercentagePassed
+    FROM
+        CourseObjectives co
+    JOIN
+        ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
+    JOIN
+        Section s ON co.CourseID = s.CourseID AND oe.SecID = s.SecID AND oe.Year = s.Year
     WHERE
-        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
-        (s.Semester = 'Spring' AND s.Year = %s)
-    GROUP BY o.ObjCode, so.SubObjCode
-    ORDER BY o.ObjCode, so.SubObjCode;
+        (s.Year = %s AND s.Semester IN ('Fall', 'Summer')) OR
+        (s.Year = %s AND s.Semester = 'Spring')
+    GROUP BY
+        co.CourseObjID;
     """
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
@@ -851,7 +878,7 @@ async def list_faculty_endpoint(query: DepartmentQuery):
 @router.post("/list_courses_by_program/")
 async def list_courses_endpoint(query: ProgramQuery):
     try:
-        result = list_courses_by_program(query.program_name.upper())
+        result = list_courses_by_program(query.program_id.upper())
         return {"courses": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -860,7 +887,7 @@ async def list_courses_endpoint(query: ProgramQuery):
 @router.post("/list_objectives_by_program/")
 async def list_objectives_endpoint(query: ProgramQuery):
     try:
-        result = list_objectives_by_program(query.program_name.upper())
+        result = list_objectives_by_program(query.program_id.upper())
         return {"objectives": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -870,7 +897,7 @@ async def list_objectives_endpoint(query: ProgramQuery):
 async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
     try:
         result = list_evaluations_by_program_and_semester(
-            query.program_name.upper(), query.semester, query.year)
+            query.program_id.upper(), query.semester)
         return {"evaluations": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

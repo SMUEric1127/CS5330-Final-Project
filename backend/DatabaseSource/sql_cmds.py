@@ -114,6 +114,7 @@ clear_tables = [
     "TRUNCATE TABLE Department;",
     "TRUNCATE TABLE Faculty;",
     "TRUNCATE TABLE Course;",
+    "TRUNCATE TABLE ProgramCourses;",
     "TRUNCATE TABLE Section;",
     "TRUNCATE TABLE Objectives;",
     "TRUNCATE TABLE SubObjectives;",
