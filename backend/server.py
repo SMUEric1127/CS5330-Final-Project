@@ -27,6 +27,7 @@ load_dotenv(dotenv_path)
 print(dotenv_path)
 
 connection = None
+print("Connecting to db from outside main")
 connection = help_functions.connect_database(
     os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
 
@@ -36,13 +37,12 @@ class DepartmentQuery(BaseModel):
 
 
 class ProgramQuery(BaseModel):
-    program_name: str
+    program_id: str
 
 
 class ProgramAndSemesterQuery(BaseModel):
-    program_name: str
+    program_id: str
     semester: str
-    year: int
 
 
 class AcademicYearQuery(BaseModel):
@@ -69,6 +69,7 @@ async def create_tables():
             'program': sql_cmds.create_program_table,
             'course': sql_cmds.create_course_table,
             'section': sql_cmds.create_section_table,
+            'programcourses': sql_cmds.create_program_courses_table,
             'objectives': sql_cmds.create_objectives_table,
             'subobjectives': sql_cmds.create_sub_objectives_table,
             'courseobjectives': sql_cmds.create_course_objectives_table,
@@ -108,7 +109,7 @@ async def delete_table(table_name: str):
         f_key_off = "SET FOREIGN_KEY_CHECKS = 0"
         help_functions.execute_query(connection, f_key_off)
 
-        table_name = table_name.lower()
+        # table_name = table_name.lower()
         valid_tables = help_functions.valid_tables(connection)
 
         if table_name not in valid_tables:
@@ -193,7 +194,7 @@ async def populate_data():
             if command.strip() != '':
                 if not help_functions.execute_query(connection, command):
                     return {"message": f"Cannot populate data, something wrong happened!", "statusCode": 500}
-        
+
         return {"message": f"Successfully populated all data", "statusCode": 200}
     except Exception as e:
         # Handle any exceptions during the process
@@ -205,7 +206,7 @@ async def populate_data():
 @router.get("/add_department/")
 async def add_department(dept_name: str, dept_code: str):
     try:
-        success, message = help_functions.validate_dept_input(
+        message, success = help_functions.validate_dept_input(
             dept_name, dept_code)
         if success:
             dept_name = help_functions.replace_ampersand(dept_name)
@@ -262,30 +263,40 @@ async def add_faculty(
 async def add_program(
     prog_name: str,
     dept_id: str,
-    lead: str,
-    lead_id: str,
-    lead_email: str
+    lead_id: str
 ):
     try:
-        success, message = help_functions.validate_program_input(
-            prog_name, dept_id, lead, lead_id, lead_email)
+        message, success = help_functions.validate_program_input(
+            prog_name, dept_id, lead_id)
         if success:
-            prog_name = prog_name.upper()
+            prog_name = help_functions.replace_ampersand(prog_name)
+            prog_name = help_functions.title_except(prog_name)
             prog_dept = dept_id.upper()
-            lead = lead.title()
-            lead_email = lead_email.lower()
+            program_count = help_functions.select_query(
+                connection, sql_cmds.count_program, (prog_dept,))
 
-            add_program_query = (
-                "INSERT INTO Program (ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) "
-                "VALUES (%s, %s, %s, %s, %s)"
-            )
-            if help_functions.execute_query(
-                    connection, add_program_query, (prog_name, prog_dept, lead, lead_id, lead_email)):
-                return {"message": "Program added successfully", "statusCode": 200}
+            if not program_count:
+                return {"message": "Error getting program count.", "statusCode": 500}
+
+            prog_count = program_count[0]['program_count']
+            progID = f"{prog_dept}P{prog_count + 1}"
+
+            lead_details = help_functions.select_query(
+                connection, sql_cmds.get_faculty_info, (lead_id,))
+            if lead_details:
+                lead, leadEmail = lead_details[0]['Name'], lead_details[0]['Email']
+                add_program_query = ("INSERT INTO Program ("
+                                     "ProgID, ProgName, DeptID, FacultyLead, FacultyLeadID, FacultyLeadEmail) VALUES ("
+                                     "%s, %s, %s, %s, %s, %s)")
+                help_functions.execute_query(
+                    connection, add_program_query, (progID, prog_name, prog_dept, lead, lead_id, leadEmail))
+
+                return {"message": "Program added successfully.", "statusCode": 200}
             else:
-                return {"message": "Something wrong happened", "statusCode": 500}
+                return {"message": f"Faculty with ID {lead_id} does not exist.", "statusCode": 500}
         else:
             return {"message": f"Program not added: {message}", "statusCode": 500}
+
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -320,7 +331,7 @@ async def add_course(
             else:
                 return {"message": "Cannot add course!", "statusCode": 500}
         else:
-            return {"message": "Course not added: Invalid input", "statusCode": 500}
+            return {"message": f"Course not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -353,9 +364,43 @@ async def add_section(
                     connection, add_section_query, (sec_id, course_id, semester, year, faculty_lead_id, enroll_count)):
                 return {"message": "Section added successfully", "statusCode": 200}
             else:
-                return {"message": "Cannot add course!", "statusCode": 500}
+                return {"message": "Cannot add section!", "statusCode": 500}
         else:
-            return {"message": "Cannot add section, invalid input", "statusCode": 500}
+            return {"message": f"Cannot add section: {message}", "statusCode": 500}
+    except Exception as e:
+        return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
+
+# Assign a Course to Program
+
+
+@router.post("/assign_program_course/")
+async def assign_program_course(
+    progID: str,
+    courseID: str
+):
+    try:
+        if help_functions.validate_prog_course_input(progID, courseID):
+            progID = progID.upper()
+            courseID = courseID.upper()
+
+            check_program = help_functions.select_query(
+                connection, sql_cmds.check_program_id_exists, (progID,))
+            if not check_program or check_program[0]['program_count'] == 0:
+                return {"message": f"Program ID {progID} does not exist. Program course not added: please enter valid program id.", "statusCode": 500}
+
+            check_course = help_functions.select_query(
+                connection, sql_cmds.check_course_exists, (courseID,))
+            if not check_course or check_course[0]['course_count'] == 0:
+                return {"message": f"Course ID {courseID} does not exist. Program course not added: please enter valid course id.", "statusCode": 500}
+
+            add_prog_course_query = "INSERT INTO ProgramCourses (ProgID, CourseID) VALUES (%s, %s)"
+            help_functions.execute_query(
+                connection, add_prog_course_query, (progID, courseID))
+
+            return {"message": "Program course added successfully.", "statusCode": 200}
+        else:
+            return {"message": "Program course not added: Invalid input.", "statusCode": 500}
+
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -363,47 +408,45 @@ async def add_section(
 @router.get("/add_objective/")
 async def add_objective(
     description: str,
-    prog: str,
+    prog_id: str,
     dept_id: str,
     obj_code: str | None = None,
 ):
     try:
         message, success = help_functions.validate_objective_input(
-            obj_code, description, prog, dept_id)
+            obj_code, description, prog_id, dept_id)
         if success:
             # obj_code = obj_code.upper()
-            prog = prog.upper()
+            prog_id = prog_id.upper()
 
             checks_passed = True
             result = help_functions.select_query(
-                connection, sql_cmds.count_obj_query, (prog, dept_id))
+                connection, sql_cmds.count_obj_query, (prog_id, dept_id))
             count = result[0]['obj_count'] if result else 0
-            next_obj_code = f"{prog}{dept_id}{count + 1}"
 
+            next_obj_code = f"{prog_id}{dept_id}{count + 1}"
             if obj_code and obj_code != next_obj_code:
                 return {
-                    "message": f"Invalid objective code: {obj_code}. "
-                    f"Next valid objective code: {next_obj_code}. "
-                    "Objective not added: please enter the next valid objective code, or let the database generate one"
+                    "message": f"Invalid objective code: {obj_code}. Next valid objective code: {next_obj_code}. ",
+                    "statusCode": 500
                 }
-                checks_passed = False
             elif checks_passed and obj_code == '':
                 obj_code = next_obj_code
 
             if checks_passed:
                 add_objective_query = (
-                    "INSERT INTO Objectives (ObjCode, Description, ProgName, DeptID) "
+                    "INSERT INTO Objectives (ObjCode, Description, ProgID, DeptID) "
                     "VALUES (%s, %s, %s, %s)"
                 )
 
                 results = help_functions.execute_query(
-                    connection, add_objective_query, (obj_code, description, prog, dept_id))
+                    connection, add_objective_query, (obj_code, description, prog_id, dept_id))
                 if results:
                     return {"message": "Objective added successfully", "statusCode": 200}
                 else:
-                    return {"message": "Cannot add section!", "statusCode": 500}
+                    return {"message": "Cannot add objective!", "statusCode": 500}
         else:
-            return {"message": "Objective not added: Invalid input", "statusCode": 500}
+            return {"message": f"Objective not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -425,8 +468,7 @@ async def add_sub_objective(
                 connection, sql_cmds.check_obj_exists, (obj_code,))
             if not obj_exists or obj_exists[0]['obj_count'] == 0:
                 return {
-                    "message": f"Learning objective code {obj_code} does not exist. "
-                    "Sub-objective not added: please enter a valid learning objective code"
+                    "message": f"Learning objective code {obj_code} does not exist. ", "statusCode": 500
                 }
 
             result = help_functions.select_query(
@@ -445,7 +487,7 @@ async def add_sub_objective(
             else:
                 return {"message": "Cannot add sub-objective!", "statusCode": 500}
         else:
-            return {"message": "Sub-objective not added: Invalid input", "statusCode": 500}
+            return {"message": f"Sub-objective not added: {message}", "statusCode": 500}
     except Exception as e:
         return {"message": f"An error occurred: {str(e)}", "statusCode": 500}
 
@@ -550,7 +592,7 @@ async def add_objective_evaluation(input_data: ObjectiveEvalInput):
             section_exists = help_functions.select_query(
                 connection, sql_cmds.check_section_exists, (courseID, secID, semester, year))
             if not section_exists or section_exists[0]['section_count'] == 0:
-                return {"message": f"Section ID {secID} does not exist. Objective evaluation not added.", "statusCode": 500}
+                return {"message": f"The data you entered does not exist. Objective evaluation not added.", "statusCode": 500}
 
             student_count = help_functions.select_query(
                 connection, sql_cmds.get_student_count, (courseID, secID, semester, year))
@@ -565,7 +607,7 @@ async def add_objective_evaluation(input_data: ObjectiveEvalInput):
                     connection, add_obj_eval, (courseObjID, secID, semester, year, evalMethod, studentsPassed)):
                 return {"message": "Objective evaluation added successfully.", "statusCode": 200}
             else:
-                return {"message": "Objective evaluation not added!", "statusCode": 500}
+                return {"message": f"Objective evaluation not added! Error: {message}", "statusCode": 500}
         else:
             return {"message": "Objective evaluation not added!", "statusCode": 500}
 
@@ -678,81 +720,113 @@ def list_faculty_by_department(department_id):
     return help_functions.execute_query(connection, query, params)
 
 
-def list_courses_by_program(program_name):
+def list_courses_by_program(program_id):
     query = """
     SELECT
-        C.CourseID AS CouseID,
+        DISTINCT C.CourseID AS CourseID,
         C.Title AS CourseTitle,
         S.Year,
         O.Description AS ObjectiveDescription,
         SO.Description AS SubObjectivesDescription,
         C.DeptID
     FROM Course C
-    JOIN Section S ON C.CourseID = S.CourseID
+    JOIN (
+        SELECT CourseID, Year
+        FROM Section
+        GROUP BY CourseID, Year
+    ) AS S ON C.CourseID = S.CourseID
     JOIN CourseObjectives CO ON C.CourseID = CO.CourseID
     JOIN Objectives O ON CO.ObjCode = O.ObjCode
     LEFT JOIN SubObjectives SO ON CO.SubObjCode = SO.SubObjCode
-    WHERE C.DeptID = (SELECT DeptID FROM Program WHERE ProgName = %s)
+    WHERE C.DeptID IN (SELECT DeptID FROM Program WHERE ProgID = %s)
     ORDER BY C.Title, S.Year;
     """
-    params = (program_name,)
+    # Converted WHERE C.DeptID = into C.DeptID IN so that it can get multiple department if same Program name
+
+    params = (program_id,)
     return help_functions.execute_query(connection, query, params)
 
 
-def list_objectives_by_program(program_name):
+def list_objectives_by_program(progID):
     query = """
     SELECT O.ObjCode, O.Description, O.DeptID
     FROM Objectives O
-    JOIN Program P ON P.ProgName = O.ProgName
-    WHERE O.ProgName = %s;
+    WHERE O.ProgID IN (
+        SELECT P.ProgID 
+        FROM Program P 
+        WHERE P.ProgID = %s
+    );
     """
-    params = (program_name,)
+    params = (progID,)
     return help_functions.execute_query(connection, query, params)
 
 
-def list_evaluations_by_program_and_semester(program_name, semester, year):
+def list_evaluations_by_program_and_semester(progID, semester):
+    # SELECT
+    #     P.ProgName,
+    #     C.DeptID,
+    #     C.CourseID,
+    #     C.Title AS CourseTitle,
+    #     S.SecID,
+    #     S.FacultyLeadID,
+    #     E.Semester,
+    #     E.Year,
+    #     E.EvalMethod,
+    #     E.StudentsPassed
+    # FROM ObjectiveEval E
+    # JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
+    # JOIN Course C ON S.CourseID = C.CourseID
+    # JOIN Program P ON C.DeptID = P.DeptID
+    # WHERE P.ProgID = %s AND E.Semester = %s AND E.Year = %s;
+
     query = """
-    SELECT
-        P.ProgName,
-        C.DeptID,
-        C.CourseID,
-        C.Title AS CourseTitle,
-        S.SecID,
-        S.FacultyLeadID,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN Section S ON E.SecID = S.SecID AND E.Semester = S.Semester AND E.Year = S.Year
-    JOIN Course C ON S.CourseID = C.CourseID
-    JOIN Program P ON C.DeptID = P.DeptID
-    WHERE P.ProgName = %s AND E.Semester = %s AND E.Year = %s;
+    SELECT pc.ProgID, c.CourseID, s.SecID, c.Title, oe.Semester, oe.Year, oe.EvalMethod, oe.StudentsPassed
+    FROM Section s
+    JOIN Course c ON s.CourseID = c.CourseID
+    JOIN ProgramCourses pc ON c.CourseID = pc.CourseID
+    LEFT JOIN CourseObjectives co ON c.CourseID = co.CourseID
+    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID AND s.SecID = oe.SecID
+    WHERE pc.ProgID = %s AND oe.Semester = %s
+    ORDER BY c.CourseID, s.SecID;
     """
-    params = (program_name, semester, year)
+    params = (progID, semester)
     return help_functions.execute_query(connection, query, params)
 
 
 def list_evaluation_results_by_academic_year(start_year):
     end_year = start_year + 1
+    # query = """
+    # SELECT
+    #     O.ObjCode AS ObjectiveCode,
+    #     SO.SubObjCode AS SubObjectiveCode,
+    #     E.Semester,
+    #     E.Year,
+    #     E.EvalMethod,
+    #     E.StudentsPassed
+    # FROM ObjectiveEval E
+    # JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
+    # JOIN Objectives O ON CO.ObjCode = O.ObjCode
+    # LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
+    # JOIN Section S ON E.SecID = S.SecID
+    # JOIN Course C on C.CourseID = S.CourseID
+    # WHERE
+    #     (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
+    #     (s.Semester = 'Spring' AND s.Year = %s)
+    # ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+    # """
     query = """
-    SELECT
-        O.ObjCode AS ObjectiveCode,
-        SO.SubObjCode AS SubObjectiveCode,
-        E.Semester,
-        E.Year,
-        E.EvalMethod,
-        E.StudentsPassed
-    FROM ObjectiveEval E
-    JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
-    JOIN Objectives O ON CO.ObjCode = O.ObjCode
-    LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
-    JOIN Section S ON E.SecID = S.SecID
-    JOIN Course C on C.CourseID = S.CourseID
-    WHERE
-        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
-        (s.Semester = 'Spring' AND s.Year = %s)
-    ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
+    SELECT co.CourseObjID, s.SecID, oe.Semester, oe.Year, oe.EvalMethod, oe.StudentsPassed
+    FROM Objectives o
+    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
+    JOIN CourseObjectives co ON o.ObjCode = co.ObjCode
+    JOIN Course c ON co.CourseID = c.CourseID
+    JOIN Section s ON c.CourseID = s.CourseID
+    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID AND s.SecID = oe.SecID
+    WHERE (s.Year = %s
+    AND s.Semester IN ('Summer', 'Fall'))
+    OR (s.Year = %s
+    AND s.Semester = 'Spring')
+    ORDER BY o.ObjCode, so.SubObjCode, c.CourseID, s.SecID;
     """
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
@@ -762,21 +836,21 @@ def aggregate_evaluations_by_academic_year(start_year):
     end_year = start_year + 1
     query = """
     SELECT
-        o.ObjCode AS ObjectiveCode,
-        so.SubObjCode AS SubObjectiveCode,
-        COALESCE(SUM(oe.StudentsPassed), 0) AS StudentsPassed,
-        COALESCE(SUM(s.EnrollCount), 0) AS TotalStudents,
-        COALESCE(ROUND((SUM(oe.StudentsPassed) / NULLIF(SUM(s.EnrollCount), 0)) * 100, 2), 0) AS PercentagePassed
-    FROM Objectives o
-    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
-    LEFT JOIN CourseObjectives co ON o.ObjCode = co.ObjCode OR so.SubObjCode = co.SubObjCode
-    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
-    LEFT JOIN Section s ON oe.SecID = s.SecID AND oe.SecID = s.SecID AND oe.Semester = s.Semester AND oe.Year = s.Year
+        co.CourseObjID,
+        SUM(oe.StudentsPassed) AS StudentsPassed,
+        SUM(s.EnrollCount) AS TotalEnrolled,
+        (SUM(oe.StudentsPassed) / SUM(s.EnrollCount)) * 100 AS PercentagePassed
+    FROM
+        CourseObjectives co
+    JOIN
+        ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
+    JOIN
+        Section s ON co.CourseID = s.CourseID AND oe.SecID = s.SecID AND oe.Year = s.Year
     WHERE
-        (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
-        (s.Semester = 'Spring' AND s.Year = %s)
-    GROUP BY o.ObjCode, so.SubObjCode
-    ORDER BY o.ObjCode, so.SubObjCode;
+        (s.Year = %s AND s.Semester IN ('Fall', 'Summer')) OR
+        (s.Year = %s AND s.Semester = 'Spring')
+    GROUP BY
+        co.CourseObjID;
     """
     params = (start_year, end_year)
     return help_functions.execute_query(connection, query, params)
@@ -804,7 +878,7 @@ async def list_faculty_endpoint(query: DepartmentQuery):
 @router.post("/list_courses_by_program/")
 async def list_courses_endpoint(query: ProgramQuery):
     try:
-        result = list_courses_by_program(query.program_name.upper())
+        result = list_courses_by_program(query.program_id.upper())
         return {"courses": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -813,7 +887,7 @@ async def list_courses_endpoint(query: ProgramQuery):
 @router.post("/list_objectives_by_program/")
 async def list_objectives_endpoint(query: ProgramQuery):
     try:
-        result = list_objectives_by_program(query.program_name.upper())
+        result = list_objectives_by_program(query.program_id.upper())
         return {"objectives": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -823,7 +897,7 @@ async def list_objectives_endpoint(query: ProgramQuery):
 async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
     try:
         result = list_evaluations_by_program_and_semester(
-            query.program_name.upper(), query.semester, query.year)
+            query.program_id.upper(), query.semester)
         return {"evaluations": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -857,8 +931,10 @@ async def get_all_tables():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 class TableName(BaseModel):
     table_name: str
+
 
 @router.post("/get_table_data/")
 async def get_table_data(table: TableName):
@@ -870,11 +946,123 @@ async def get_table_data(table: TableName):
         return {"columns": columns, "data": data, "statusCode": 200}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
+@router.get("/faculty")
+async def get_faculty():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT FacultyID, Name, Email FROM Faculty")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/department")
+async def get_department(deptId: str = None):
+    try:
+        cursor = connection.cursor()
+        query = "SELECT DeptID, DeptName FROM Department"
+
+        # Modify the query based on the presence of deptId
+        if deptId is not None:
+            query += " WHERE DeptID = %s"
+            cursor.execute(query, (deptId,))
+        else:
+            cursor.execute(query)
+
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/program")
+async def get_program():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT ProgID, ProgName FROM Program")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/course")
+async def get_course():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT CourseID, Title FROM Course")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/objective")
+async def get_objective():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT ObjCode, Description FROM Objectives")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/sub_objective")
+async def get_subobjective_by_obj_code(obj_code: str):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            f"SELECT SubObjCode, Description FROM SubObjectives WHERE ObjCode = %s", (obj_code,))
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/course_objective")
+async def get_courseobjective():
+    try:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT CourseObjID FROM CourseObjectives")
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SectionQuery(BaseModel):
+    course_id: str
+
+
+@router.post("/section")
+async def get_section_by_course_id(query: SectionQuery):
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            f"SELECT DISTINCT SecID FROM Section WHERE CourseID = %s", (query.course_id,))
+        data = cursor.fetchall()
+        columns = [column[0] for column in cursor.description]
+        return {"columns": columns, "data": data, "statusCode": 200}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 app.include_router(router=router)
 if __name__ == "__main__":
     if connection is None:
+        print("Connecting to db from inside main")
         connection = help_functions.connect_database(
             os.getenv("HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+    print("Starting uvicorn app")
     uvicorn.run(app, host="0.0.0.0", port=8000)
     app.include_router(router=router)

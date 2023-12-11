@@ -16,21 +16,6 @@ services:
     networks:
       - cs5330_network
 
-  phpmyadmin:
-    depends_on:
-      - mysql_db
-    image: phpmyadmin
-    restart: always
-    ports:
-      - 8080:80
-    environment:
-      PMA_HOST: mysql_db
-      PMA_PORT: 3306
-      PMA_USER: cs5330
-      PMA_PASSWORD: Sql5330!
-    networks:
-      - cs5330_network
-
   frontend:
     build:
       context: ./frontend

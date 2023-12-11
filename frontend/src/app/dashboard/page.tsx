@@ -25,6 +25,7 @@ import {
 import { AdminActionMenu } from "@/components/menu/AdminTable/AdminActionMenu";
 import { Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { AssignCourseProgram } from "@/components/menu/DataEntry/AssignCourseProgram";
 
 export default function Home() {
   const [currentOpenTab, setCurrentOpenTab] = useState<string | null>(null);
@@ -47,15 +48,16 @@ export default function Home() {
   const dataEntryTabs = [
     { id: 1, label: "Tables Manipulation" },
     { id: 2, label: "Add Data" },
-    { id: 3, label: "Assign Course Objective" },
-    { id: 4, label: "Section Evaluation Input" },
+    { id: 3, label: "Assign Course - Program" },
+    { id: 4, label: "Assign Course - Objective" },
+    { id: 5, label: "Section Evaluation Input" },
   ];
 
   const dataQueryingTabs = [
-    { id: 1, label: "By Department" },
-    { id: 2, label: "By Program" },
-    { id: 3, label: "By Semester and Program" },
-    { id: 4, label: "By Academic Year" },
+    { id: 1, label: "List by Department" },
+    { id: 2, label: "List by Program" },
+    { id: 3, label: "Evaluation by Semester and Program" },
+    { id: 4, label: "Evaluation by Academic Year" },
   ];
 
   const handleTabClick = (tabId: number) => {
@@ -76,8 +78,10 @@ export default function Home() {
         case 2:
           return <AddData />;
         case 3:
-          return <AssignCourseObjective />;
+          return <AssignCourseProgram />;
         case 4:
+          return <AssignCourseObjective />;
+        case 5:
           return <SectionEvaluation />;
         default:
           return null;
@@ -161,8 +165,8 @@ export default function Home() {
   return (
     <div className="min-h-fit w-screen">
       <NavigationMain />
-      <div className="w-max[90vw] px-10 h-full items-center justify-center">
-        <div className="flex md:space-x-10 min-h-screen flex-col md:flex-row sm:h-fit">
+      <div className="w-max[90vw] px-10 h-fit items-center justify-center">
+        <div className="flex md:space-x-10 min-h-fit flex-col md:flex-row sm:h-fit">
           <div className="flex-2 w-full md:max-w-[30%] sm:w-full pt-10 pb-5 md:py-20 max-h-[80vh]">
             <Card className="min-h-fit md:min-h-[70vh]">
               <CardHeader>
@@ -264,17 +268,16 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-screen max-w-full md:max-w-[70%] sm:max-w-full sm:min-h-fit">
+          <div className="flex-1 pt-0 md:pt-20 pb-10 min-h-fit md:min-h-fit max-w-full md:max-w-[70%] sm:max-w-[full] sm:min-h-fit">
             <Card className="min-h-[70vh]">
               <CardHeader>
                 <CardTitle>Action Viewer</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="max-h-[60vh]">
-                  {(activeTab == 3 || activeTab == 4) &&
-                    currentOpenTab == "entry" && (
-                      <p className="pb-5">Populates the form fields</p>
-                    )}
+                  {activeTab >= 3 && currentOpenTab == "entry" && (
+                    <p className="pb-5">Populates the form fields</p>
+                  )}
                   {(activeTab == 1 || activeTab == 2) &&
                     currentOpenTab == "entry" && (
                       <p className="pb-0">Select List of Actions below</p>

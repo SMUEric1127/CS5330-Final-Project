@@ -54,7 +54,7 @@ export const AddData = () => {
   const [objectiveData, setObjectiveData] = useState({
     objCode: "",
     description: "",
-    prog: "",
+    prog_id: "",
     dept_id: "",
   });
 
@@ -117,7 +117,7 @@ export const AddData = () => {
             const url = `/api/add_department/?dept_name=${encodeURIComponent(
               departmentData.departmentName
             )}&dept_code=${encodeURIComponent(departmentData.departmentCode)}`;
-            const successMessage = "Department created";
+            const successMessage = "Department created successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Department"
@@ -142,7 +142,7 @@ export const AddData = () => {
             )}&dept_id=${encodeURIComponent(
               facultyData.departmentId
             )}&position=${encodeURIComponent(facultyData.position)}`;
-            const successMessage = "Faculty added";
+            const successMessage = "Faculty added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Faculty"
@@ -162,12 +162,8 @@ export const AddData = () => {
               programData.prog_name
             )}&dept_id=${encodeURIComponent(
               programData.dept_id
-            )}&lead=${encodeURIComponent(
-              programData.lead
-            )}&lead_id=${encodeURIComponent(
-              programData.leadID
-            )}&lead_email=${encodeURIComponent(programData.leadEmail)}`;
-            const successMessage = "Program added";
+            )}&lead_id=${encodeURIComponent(programData.leadID)}`;
+            const successMessage = "Program added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Program"
@@ -191,7 +187,7 @@ export const AddData = () => {
             )}&description=${encodeURIComponent(
               courseData.description
             )}&dept_id=${encodeURIComponent(courseData.dept_id)}`;
-            const successMessage = "Course added";
+            const successMessage = "Course added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Course"
@@ -216,7 +212,7 @@ export const AddData = () => {
             )}&faculty_lead_id=${encodeURIComponent(
               sectionData.facultyLeadID
             )}&enroll_count=${encodeURIComponent(sectionData.enrollCount)}`;
-            const successMessage = "Section added";
+            const successMessage = "Section added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Section"
@@ -230,16 +226,16 @@ export const AddData = () => {
         <PopupComponent
           onConfirm={() => {
             console.log(
-              `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog}, ${objectiveData.dept_id}`
+              `Creating objective with: ${objectiveData.objCode}, ${objectiveData.description}, ${objectiveData.prog_id}, ${objectiveData.dept_id}`
             );
             const url = `/api/add_objective/?description=${encodeURIComponent(
               objectiveData.description
-            )}&prog=${encodeURIComponent(
-              objectiveData.prog
+            )}&prog_id=${encodeURIComponent(
+              objectiveData.prog_id
             )}&dept_id=${encodeURIComponent(
               objectiveData.dept_id
             )}&obj_code=${encodeURIComponent(objectiveData.objCode)}`;
-            const successMessage = "Objective added";
+            const successMessage = "Objective added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Objective"
@@ -258,7 +254,7 @@ export const AddData = () => {
             const url = `/api/add_sub_objective/?description=${encodeURIComponent(
               subObjectiveData.description
             )}&obj_code=${encodeURIComponent(subObjectiveData.objCode)}`;
-            const successMessage = "Sub-Objective added";
+            const successMessage = "Sub-Objective added successfully! 🎉";
             sendQuery(url, successMessage);
           }}
           buttonTitle="Add Sub-Objective"

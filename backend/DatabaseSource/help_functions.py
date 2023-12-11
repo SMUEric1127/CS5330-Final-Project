@@ -3,37 +3,41 @@ from mysql.connector import Error
 import re
 import time
 
+TIMEOUT = 10
+
+
 def connect_database(host_name, user_name, user_password, db_name):
     print(
-        f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}")
+        f"Connecting to: {host_name}, {user_name}, {user_password}, {db_name}, connection time out is {TIMEOUT} seconds, please change it accordingly")
     connection = None
     while connection is None:
         try:
             connection = mysql.connector.connect(
-                host=host_name,
+                host="localhost",
                 user=user_name,
                 passwd=user_password,
-                database=db_name
+                database=db_name,
+                connection_timeout=10
             )
             if connection.is_connected():
+                print(
+                    "Didn't found mysql_db through docker, tried localhost and success.")
                 print("MySQL Database connection successful")
                 return connection
         except Error as err:
             try:
                 connection = mysql.connector.connect(
-                    host="localhost",
+                    host="mysql_db",
                     user=user_name,
                     passwd=user_password,
-                    database=db_name
+                    database=db_name,
+                    connection_timeout=10
                 )
                 if connection.is_connected():
-                    print(
-                        "Didn't found mysql_db through docker, tried localhost and success.")
                     print("MySQL Database connection successful")
                     return connection
             except Error as err:
                 pass
-
             print("Cannot connect to " + host_name)
             print("Retrying in 5 seconds...")
             time.sleep(5)
@@ -112,7 +116,7 @@ def valid_columns(connection, table):
         cursor.close()
 
 
-def validate_program_input(p_name, p_dept, lead, l_id, l_email):
+def validate_program_input(p_name, p_dept, l_id):
     if not re.match(r"^[A-Za-z ]{1,50}$", p_name):
         print(f"Invalid program name, use only normal characters: {p_name}")
         return (f"Invalid program name, use only normal characters: {p_name}"), False
@@ -120,24 +124,17 @@ def validate_program_input(p_name, p_dept, lead, l_id, l_email):
         print(
             f"Invalid program department, use only normal character (no space): {p_dept}")
         return (f"Invalid program department, use only normal character (no space): {p_dept}"), False
-    if not re.match(r"^[A-Za-z ]{1,40}$", lead):
-        print(f"Invalid lead name, use only normal characters: {lead}")
-        return (f"Invalid lead name, use only normal characters: {lead}"), False
     if not re.match(r"^[0-9]{8}$", l_id):
         print(f"Invalid lead ID, must be 8 digits: {l_id}")
         return (f"Invalid lead ID, must be 8 digits: {l_id}"), False
-    if not re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", l_email):
-        print(f"Invalid lead email: {l_email}")
-        return (f"Invalid lead email: {l_email}"), False
     return "Success", True
 
 
 def validate_dept_input(d_name, d_code):
-    if not re.match(r"^[A-Za-z]{1,40}$", d_name):
+    if not re.match(r"^[A-Za-z ]{1,40}$", d_name):
         return (f"Invalid department name, must contain only characters: {d_name}"), False
     if not re.match(r"^[A-Za-z]{1,4}$", d_code):
-
-        return (f"Invalid department code: {d_code}"), False
+        return (f"Invalid department code: {d_code}, maximum 4 characters"), False
     return "Success", True
 
 
@@ -181,7 +178,7 @@ def validate_course_input(c_id, c_title, c_desc, c_dept):
 
 
 def validate_section_input(s_id, c_id, s_sem, s_year, f_id, e_count):
-    if not re.match(r"^[0-9]{3}$", s_id):
+    if not re.match(r"^(?!000$)[0-9]{3}$", s_id):
         print(f"Invalid section ID: {s_id}")
         return f"Invalid section ID: {s_id}", False
     if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}$", c_id):
@@ -202,17 +199,31 @@ def validate_section_input(s_id, c_id, s_sem, s_year, f_id, e_count):
     return "Success", True
 
 
-def validate_objective_input(o_code, o_desc, prog, p_dept):
+def validate_prog_course_input(p_id, c_id):
+    if not re.match(r"^[A-Za-z]{1,5}[0-9]{1,2}$", p_id):
+        print(f"Invalid program name: {p_id}")
+        return f"Invalid program name: {p_id}", False
+    if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}$", c_id):
+        print(f"Invalid course ID: {c_id}")
+        return f"Invalid course ID: {p_id}", False
+    return True
+
+
+def validate_objective_input(o_code, o_desc, prog_id, p_dept):
     if o_code:
-        if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}$", o_code):
+        # check if it's contain space
+        if " " in o_code:
             print(f"Invalid objective code: {o_code}")
-            return f"Invalid objective code: {o_code}", False
+            return f"Invalid objective code: {o_code}, remove any space", False
+        if not re.match(r"^[A-Za-z0-9]+$", o_code):
+            print(f"Invalid objective code: {o_code}")
+            return f"Invalid objective code: {o_code}, remove special character", False
     if not re.match(r"^[A-Za-z0-9 ]{1,500}$", o_desc):
         print(f"Invalid objective description: {o_desc}")
         return f"Invalid objective description: {o_desc}", False
-    if not re.match(r"^[A-Za-z ]{1,50}$", prog):
-        print(f"Invalid program name: {prog}")
-        return f"Invalid program name: {prog}", False
+    if not re.match(r"^[A-Za-z]{1,5}[0-9]{1,2}$", prog_id):
+        print(f"Invalid program name: {prog_id}")
+        return f"Invalid program name: {prog_id}", False
     if not re.match(r"^[A-Za-z]{1,4}$", p_dept):
         print(f"Invalid program department: {p_dept}")
         return f"Invalid program department: {p_dept}", False
@@ -223,9 +234,11 @@ def validate_sub_objective_input(s_desc, o_code):
     if not re.match(r"^[A-Za-z0-9 ]{1,500}$", s_desc):
         print(f"Invalid sub-objective description: {s_desc}")
         return f"Invalid sub-objective description: {s_desc}", False
-    if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}$", o_code):
+    if " " in o_code:
         print(f"Invalid objective code: {o_code}")
-        return f"Invalid objective code: {o_code}", False
+        return f"Invalid objective code: {o_code}, remove any space", False
+    if not re.match(r"^[A-Za-z0-9]+$", o_code):
+        print(f"Invalid objective code: {o_code}")
     return "Success", True
 
 
@@ -233,23 +246,25 @@ def validate_course_obj_input(c_id, o_code, s_code, populate):
     if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}$", c_id):
         print(f"Invalid course ID: {c_id}")
         return f"Invalid course ID: {c_id}", False
-    if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}$", o_code):
+    if " " in o_code:
+        print(f"Invalid objective code: {o_code}")
+        return f"Invalid objective code: {o_code}, remove any space", False
+    if not re.match(r"^[A-Za-z0-9]+$", o_code):
+        print(f"Invalid objective code: {o_code}")
+        return f"Invalid objective code: {o_code}, remove special character", False
+    if not re.match(r"^[A-Za-z]{1,10}[0-9]{1,5}[A-Za-z]{1,10}[0-9]{1,5}$", o_code):
         print(f"Invalid objective code: {o_code}")
         return f"Invalid objective code: {o_code}", False
-    if s_code:
-        if not re.match(r"^[A-Za-z]{1,7}[0-9]{1,2}\.[0-9]{1,2}$", s_code):
-            print(f"Invalid sub-objective code: {s_code}")
-            return f"Invalid sub-objective code: {s_code}", False
-    if populate and not re.match(r"^(Yes|No)$", populate, re.IGNORECASE):
+    if populate and not re.match(r"^(Yes|No|yes|no)$", populate, re.IGNORECASE):
         print(f"Invalid populate: {populate}")
         return f"Invalid populate: {populate}", False
     return "Success", True
 
 
 def validate_obj_eval_input(course_obj_id, s_id, sem, yr, eval, pass_count):
-    if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}\.[A-Za-z]{1,8}[0-9]{1,2}(\.[0-9]{1,2})?$", course_obj_id):
-        print(f"Invalid course ID: {course_obj_id}")
-        return f"Invalid course ID: {course_obj_id}", False
+    # if not re.match(r"^[A-Za-z]{1,4}[0-9]{4}\.[A-Za-z]{1,8}[0-9]{1,2}(\.[0-9]{1,2})?$", course_obj_id):
+    #     print(f"Invalid course ID: {course_obj_id}")
+    #     return f"Invalid course ID: {course_obj_id}", False
     if not re.match(r"^[0-9]{3}$", s_id):
         print(f"Invalid section ID: {s_id}")
         return f"Invalid section ID: {s_id}", False
@@ -273,7 +288,8 @@ def replace_ampersand(text):
 
 
 def title_except(s):
-    exceptions = ["the", "and", "in", "for", "on", "with", "at", "by", "from"]
+    exceptions = ["the", "and", "in", "for", "on",
+                  "with", "at", "by", "from", "of", "a", "an", "to"]
     word_list = s.split()
     final = [word_list[0].capitalize()]
     for word in word_list[1:]:
@@ -283,7 +299,7 @@ def title_except(s):
 
 def valid_commands(s):
     valid_cmds = [
-        'create', 'clear', 'clear_all', 'dept', 'faculty', 'prog', 'course', 'section', 'obj', 'subobj', 'courseobj',
-        'objeval', 'delete', 'update', 'exit'
+        'create', 'clear', 'clear_all', 'dept', 'faculty', 'prog', 'course', 'section', 'progcourse', 'obj', 'subobj',
+        'courseobj', 'objeval', 'delete', 'update', 'exit'
     ]
     return s in valid_cmds

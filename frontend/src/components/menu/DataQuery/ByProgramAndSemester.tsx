@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,19 +11,25 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ProgramCombobox } from "./ComboxBox/Program";
 
 export const ByProgramAndSemester = () => {
-  const [programName, setProgramName] = useState<undefined | string>(undefined);
+  const [programID, setProgramID] = useState<undefined | string>(undefined);
   const [semester, setSemester] = useState<undefined | string>(undefined);
-  const [year, setYear] = useState<undefined | number>(undefined);
   const [evaluations, setEvaluations] = useState([]);
+  const semesterList = ["Fall", "Spring", "Summer"];
 
   const handleSearch = async () => {
-    if (
-      programName !== undefined &&
-      semester !== undefined &&
-      year !== undefined
-    ) {
+    if (programID !== undefined && semester !== undefined) {
       try {
         const url = "/api/list_evaluations_by_program_and_semester/";
 
@@ -34,9 +40,8 @@ export const ByProgramAndSemester = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            program_name: programName,
+            program_id: programID,
             semester: semester,
-            year: year,
           }),
         });
 
@@ -53,46 +58,96 @@ export const ByProgramAndSemester = () => {
     }
   };
 
+  // We will update a list of departments based on what user inputs
+  const [programFetchList, setProgramFetchList] = useState<string[]>([]);
+
+  const handleProgramFetch = async () => {
+    try {
+      // Add the query param ProgramID to the URL
+      const url = `/api/program`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        return;
+      }
+
+      // Assuming the server returns a JSON response
+      const responseData = await response.json();
+
+      // Concat the responseData.data (DeptID - DeptName) to the ProgramFetchList
+      const concatResult = responseData.data.map((row: any) => row.join(" - "));
+      setProgramFetchList(concatResult);
+    } catch (error) {
+      console.error(`Error`, error);
+    }
+  };
+
+  useEffect(() => {
+    handleProgramFetch();
+  }, []);
+
   return (
-    <div className="flex items-center flex-col space-y-5 max-h-[60vh] overflow-y-auto">
-      <div className="w-full flex flex-row space-x-5 p-1">
-        <Input
+    <div className="flex items-center flex-col space-y-5 max-h-[60vh] min-h-fit">
+      <div className="flex flex-row space-x-5 p-1">
+        {/* <Input
           placeholder="Enter the program name"
           onChange={(e) => {
-            setProgramName(e.target.value);
+            setProgramID(e.target.value);
           }}
-        />
-        <Input
-          placeholder="Enter the semester"
-          onChange={(e) => {
-            setSemester(e.target.value);
+        /> */}
+        <div className="min-w-[200px] pl-30">
+          <ProgramCombobox
+            programFetchList={programFetchList}
+            programID={programID}
+            setProgramID={setProgramID}
+          />
+        </div>
+        <Select
+          name="semester"
+          onValueChange={(value: any) => {
+            setSemester(value);
           }}
-        />
-        <Input
-          placeholder="Enter the year"
-          onChange={(e) => {
-            setYear(Number(e.target.value));
-          }}
-        />
+        >
+          <SelectTrigger className="w-[100px]">
+            <SelectValue placeholder="Select a Semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Semester</SelectLabel>
+              {semesterList.map((row: any) => (
+                <SelectItem key={row} value={row}>
+                  {row}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Button onClick={handleSearch}>Search</Button>
       </div>
       <Table>
-        {/* <TableCaption>
-          Evaluations for {programName}, {semester} {year}.
-        </TableCaption> */}
+        <TableCaption>
+          {programID && semester && (
+            <p>
+              Evaluations for {programID}, {semester}.
+            </p>
+          )}
+          {(!programID || !semester) && (
+            <p>Please enter information above to search for evaluations</p>
+          )}
+        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[20px]">Index</TableHead>
-            <TableHead>Program</TableHead>
-            <TableHead>Department</TableHead>
-            <TableHead>Course Code</TableHead>
-            <TableHead>Course Name</TableHead>
+            {/* SELECT pc.ProgID, c.CourseID, s.SecID, c.Title, oe.Semester,
+            oe.Year, oe.EvalMethod, oe.StudentsPassed */}
+            <TableHead>Program ID</TableHead>
+            <TableHead>Course ID</TableHead>
             <TableHead>Section</TableHead>
-            <TableHead>Student ID</TableHead>
+            <TableHead>Course Title</TableHead>
             <TableHead>Semester</TableHead>
             <TableHead>Year</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Result</TableHead>
+            <TableHead>Evaluation Method</TableHead>
+            <TableHead>Students Passed</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
