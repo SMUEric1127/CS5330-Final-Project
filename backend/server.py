@@ -54,6 +54,25 @@ async def root():
     # Get something simple without any params
     return {"statusCode": 200, "result": "Successfully set up backend, please go to the frontend and test it out!"}
 
+
+@app.middleware("http")
+async def check_health(request, call_next):
+    global connection
+    if connection is None:
+        print("Please wait until connection is established")
+        return {"statusCode": 403, "message": "Please wait until connection is established"}
+    print("Check health connections")
+    if not connection.is_connected():
+        connection = help_functions.connect_database(os.getenv("HOST"), os.getenv(
+            "MYSQL_USER"), os.getenv("MYSQL_PASSWORD"), os.getenv("DB_NAME"))
+    
+    if not connection.is_connected():
+        print("Cannot connect, return error")
+        return {"statusCode": 500, "message": "Cannot connect to database, please try again"}
+    print("Done check health, next request")
+    response = await call_next(request)
+    return response
+
 # Create Tables Function
 
 
@@ -795,64 +814,60 @@ def list_evaluations_by_program_and_semester(progID, semester):
 
 def list_evaluation_results_by_academic_year(start_year):
     end_year = start_year + 1
-    # query = """
-    # SELECT
-    #     O.ObjCode AS ObjectiveCode,
-    #     SO.SubObjCode AS SubObjectiveCode,
-    #     E.Semester,
-    #     E.Year,
-    #     E.EvalMethod,
-    #     E.StudentsPassed
-    # FROM ObjectiveEval E
-    # JOIN CourseObjectives CO ON E.CourseObjID = CO.CourseObjID
-    # JOIN Objectives O ON CO.ObjCode = O.ObjCode
-    # LEFT JOIN SubObjectives SO ON CO.ObjCode = SO.ObjCode
-    # JOIN Section S ON E.SecID = S.SecID
-    # JOIN Course C on C.CourseID = S.CourseID
-    # WHERE
-    #     (s.Semester IN ('Fall', 'Summer') AND s.Year = %s) OR
-    #     (s.Semester = 'Spring' AND s.Year = %s)
-    # ORDER BY O.ObjCode, SO.SubObjCode, E.Semester, E.Year;
-    # """
     query = """
-    SELECT co.CourseObjID, s.SecID, oe.Semester, oe.Year, oe.EvalMethod, oe.StudentsPassed
-    FROM Objectives o
-    LEFT JOIN SubObjectives so ON o.ObjCode = so.ObjCode
-    JOIN CourseObjectives co ON o.ObjCode = co.ObjCode
-    JOIN Course c ON co.CourseID = c.CourseID
-    JOIN Section s ON c.CourseID = s.CourseID
-    LEFT JOIN ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID AND s.SecID = oe.SecID
-    WHERE (s.Year = %s
-    AND s.Semester IN ('Summer', 'Fall'))
-    OR (s.Year = %s
-    AND s.Semester = 'Spring')
-    ORDER BY o.ObjCode, so.SubObjCode, c.CourseID, s.SecID;
+    SELECT 
+        O.CourseObjID, 
+        O.SecID, 
+        O.Semester, 
+        O.Year, 
+        O.EvalMethod, 
+        O.StudentsPassed
+        # Obj.Description AS ObjDescription, 
+        # SubObj.Description AS SubObjDescription
+    FROM 
+        ObjectiveEval O
+    INNER JOIN 
+        CourseObjectives CO ON O.CourseObjID = CO.CourseObjID
+    LEFT JOIN 
+        Objectives Obj ON CO.ObjCode = Obj.ObjCode
+    LEFT JOIN 
+        SubObjectives SubObj ON CO.SubObjCode = SubObj.SubObjCode
+    WHERE 
+        (O.Semester = 'Summer' AND O.Year = %s) 
+        OR (O.Semester = 'Fall' AND O.Year = %s)
+        OR (O.Semester = 'Spring' AND O.Year = %s)
+    ORDER BY 
+        CO.ObjCode, 
+        CO.SubObjCode, 
+        CO.CourseID, 
+        O.SecID;
     """
-    params = (start_year, end_year)
+    params = (start_year, start_year, end_year)
     return help_functions.execute_query(connection, query, params)
 
 
 def aggregate_evaluations_by_academic_year(start_year):
     end_year = start_year + 1
     query = """
-    SELECT
-        co.CourseObjID,
-        SUM(oe.StudentsPassed) AS StudentsPassed,
-        SUM(s.EnrollCount) AS TotalEnrolled,
-        (SUM(oe.StudentsPassed) / SUM(s.EnrollCount)) * 100 AS PercentagePassed
-    FROM
-        CourseObjectives co
-    JOIN
-        ObjectiveEval oe ON co.CourseObjID = oe.CourseObjID
-    JOIN
-        Section s ON co.CourseID = s.CourseID AND oe.SecID = s.SecID AND oe.Year = s.Year
-    WHERE
-        (s.Year = %s AND s.Semester IN ('Fall', 'Summer')) OR
-        (s.Year = %s AND s.Semester = 'Spring')
-    GROUP BY
-        co.CourseObjID;
+    SELECT 
+        CO.CourseObjID,
+        SUM(O.StudentsPassed) AS TotalStudentsPassed,
+        SUM(S.EnrollCount) AS TotalStudentsEnrolled,
+        (SUM(O.StudentsPassed) / SUM(S.EnrollCount)) * 100 AS PercentagePassed
+    FROM 
+        CourseObjectives CO
+    INNER JOIN 
+        ObjectiveEval O ON CO.CourseObjID = O.CourseObjID
+    INNER JOIN 
+        Section S ON CO.CourseID = S.CourseID AND O.SecID = S.SecID AND O.Year = S.Year AND O.Semester = S.Semester
+    WHERE 
+        (O.Semester = 'Summer' AND O.Year = %s) 
+        OR (O.Semester = 'Fall' AND O.Year = %s)
+        OR (O.Semester = 'Spring' AND O.Year = %s)
+    GROUP BY 
+        CO.CourseObjID;
     """
-    params = (start_year, end_year)
+    params = (start_year, start_year, end_year)
     return help_functions.execute_query(connection, query, params)
 
 
@@ -907,6 +922,8 @@ async def list_evaluations_endpoint(query: ProgramAndSemesterQuery):
 async def list_evaluation_results_endpoint(query: AcademicYearQuery):
     try:
         result = list_evaluation_results_by_academic_year(query.start_year)
+        if not result:
+            result = []
         return {"evaluation_results": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

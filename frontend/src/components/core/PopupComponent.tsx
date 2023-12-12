@@ -32,7 +32,7 @@ export const PopupComponent: React.FC<PopupComponentProps> = ({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="mx-5">{buttonTitle}</Button>
+        <Button className="mx-5 text-white">{buttonTitle}</Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="text-foreground">
         <AlertDialogHeader>
