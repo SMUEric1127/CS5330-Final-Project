@@ -18,8 +18,6 @@ At the current directory (where docker-compose.yml) is in, start the docker by
 
 > docker compose up
 
-This will start the mysql and the phpmyadmin so we can view the data (similar to MySQL workbench, but on the browser).
-
 ## 2. Verify the Backend started (Important, this need to be check so that the mysql connection is confirmed):
 
 Return something like the following should make the application ready to function properly.
