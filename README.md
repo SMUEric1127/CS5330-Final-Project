@@ -16,9 +16,7 @@ Install Docker (if you haven't): [Docker Installation](https://docs.docker.com/e
 
 At the current directory (where docker-compose.yml) is in, start the docker by
 
-> docker compose up -d
-
--d is detached, just so we can close the command
+> docker compose up
 
 This will start the mysql and the phpmyadmin so we can view the data (similar to MySQL workbench, but on the browser).
 
